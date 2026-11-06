@@ -192,7 +192,7 @@ class LeavePolicy {
         return 5;
       case LeaveType.bereavement:
         return 5;
-      case LeaveType.maternityPaternity:
+      case LeaveType.unpaid:
         return 15;
     }
   }
@@ -205,7 +205,6 @@ class LeavePolicy {
     required int requestedWorkingDays,
     int? year,
   }) {
-    final targetYear = year ?? DateTime.now().year;
     final allocated = allocatedDaysFor(leaveType);
     var used = 0;
     for (final req in existingRequests) {
@@ -214,7 +213,9 @@ class LeavePolicy {
           req.status == LeaveStatus.cancelled) {
         continue;
       }
-      if (req.startDate.year == targetYear || req.endDate.year == targetYear) {
+      if (year == null ||
+          req.startDate.year == year ||
+          req.endDate.year == year) {
         used += req.totalDays;
       }
     }
@@ -236,7 +237,7 @@ class LeavePolicy {
     DateTime start,
     DateTime end, {
     Set<DateTime> holidays = const {},
-    List<PublicHoliday> namedHolidays = kDefaultPublicHolidays,
+    List<PublicHoliday>? namedHolidays,
   }) {
     final s = _dateOnly(start);
     final e = _dateOnly(end);
@@ -249,8 +250,9 @@ class LeavePolicy {
       );
     }
 
+    final effectiveHolidays = namedHolidays ?? kDefaultPublicHolidays;
     final holidayNameByDate = <DateTime, String>{
-      for (final h in namedHolidays) _dateOnly(h.date): h.name,
+      for (final h in effectiveHolidays) _dateOnly(h.date): h.name,
     };
     final normalizedHolidays = <DateTime>{
       ...holidays.map(_dateOnly),
@@ -289,78 +291,6 @@ class LeavePolicy {
     );
   }
 
-  /// Scans [holidays] starting from [fromDate] for an upcoming holiday that sits
-  /// adjacent to a weekend (Tuesday or Thursday, or Monday/Friday) and suggests
-  /// taking 1 bridge day off for a 4-day break.
-  static BridgeDaySuggestion? findBridgeDaySuggestion(
-    DateTime fromDate, {
-    List<PublicHoliday> holidays = kDefaultPublicHolidays,
-  }) {
-    final start = _dateOnly(fromDate);
-    for (final h in holidays) {
-      final d = _dateOnly(h.date);
-      if (d.isBefore(start)) continue;
-
-      // Thursday holiday -> take Friday off for a 4-day break (Thu-Sun)
-      if (d.weekday == DateTime.thursday) {
-        final bridge = DateTime(d.year, d.month, d.day + 1);
-        return BridgeDaySuggestion(
-          holiday: h,
-          bridgeStartDate: bridge,
-          bridgeEndDate: bridge,
-          totalDaysAway: 4,
-          leaveDaysRequired: 1,
-          message:
-              '${h.name} falls on a Thursday — take Friday off to get 4 days away for 1 day of leave.',
-        );
-      }
-      // Tuesday holiday -> take Monday off for a 4-day break (Sat-Tue)
-      if (d.weekday == DateTime.tuesday) {
-        final bridge = DateTime(d.year, d.month, d.day - 1);
-        if (!bridge.isBefore(start)) {
-          return BridgeDaySuggestion(
-            holiday: h,
-            bridgeStartDate: bridge,
-            bridgeEndDate: bridge,
-            totalDaysAway: 4,
-            leaveDaysRequired: 1,
-            message:
-                '${h.name} falls on a Tuesday — take Monday off to get 4 days away for 1 day of leave.',
-          );
-        }
-      }
-      // Friday holiday -> take Thursday off for a 4-day break (Thu-Sun)
-      if (d.weekday == DateTime.friday) {
-        final bridge = DateTime(d.year, d.month, d.day - 1);
-        if (!bridge.isBefore(start)) {
-          return BridgeDaySuggestion(
-            holiday: h,
-            bridgeStartDate: bridge,
-            bridgeEndDate: bridge,
-            totalDaysAway: 4,
-            leaveDaysRequired: 1,
-            message:
-                '${h.name} creates a long weekend — add Thursday to enjoy 4 days away for 1 day of leave.',
-          );
-        }
-      }
-      // Monday holiday -> take Tuesday off for a 4-day break (Sat-Tue)
-      if (d.weekday == DateTime.monday) {
-        final bridge = DateTime(d.year, d.month, d.day + 1);
-        return BridgeDaySuggestion(
-          holiday: h,
-          bridgeStartDate: bridge,
-          bridgeEndDate: bridge,
-          totalDaysAway: 4,
-          leaveDaysRequired: 1,
-          message:
-              '${h.name} is on a Monday — add Tuesday off for a 4-day break using 1 day of leave.',
-        );
-      }
-    }
-    return null;
-  }
-
   /// Finds overlapping active (pending or approved) leave requests from other
   /// teammates across `[target.startDate, target.endDate]`.
   static List<LeaveRequest> findTeamConflicts(
@@ -390,8 +320,7 @@ class LeavePolicy {
   }
 }
 
-/// Corporate / public holiday entry used by the smart date picker and
-/// bridge-day recommender.
+/// Corporate / public holiday entry used by the smart date picker (`⭐ Smart date picker`).
 class PublicHoliday {
   final DateTime date;
   final String name;
@@ -408,7 +337,6 @@ final List<PublicHoliday> kDefaultPublicHolidays = [
   PublicHoliday(date: DateTime(2026, 9, 14), name: 'Ganesh Chaturthi'),
   PublicHoliday(date: DateTime(2026, 10, 2), name: 'Gandhi Jayanti'),
   PublicHoliday(date: DateTime(2026, 10, 20), name: 'Dussehra'),
-  PublicHoliday(date: DateTime(2026, 11, 9), name: 'Diwali (Laxmi Pujan)'),
   PublicHoliday(date: DateTime(2026, 11, 24), name: 'Guru Nanak Jayanti'),
   PublicHoliday(date: DateTime(2026, 12, 25), name: 'Christmas Day'),
   PublicHoliday(date: DateTime(2027, 1, 1), name: 'New Year\'s Day'),
@@ -451,25 +379,6 @@ class WorkingDayBreakdown {
     }
     return '$workingDays $dayWord (${skippedParts.join(' · ')})';
   }
-}
-
-/// Recommendation for a 1-day bridge leave next to a public holiday and weekend.
-class BridgeDaySuggestion {
-  final PublicHoliday holiday;
-  final DateTime bridgeStartDate;
-  final DateTime bridgeEndDate;
-  final int totalDaysAway;
-  final int leaveDaysRequired;
-  final String message;
-
-  const BridgeDaySuggestion({
-    required this.holiday,
-    required this.bridgeStartDate,
-    required this.bridgeEndDate,
-    required this.totalDaysAway,
-    required this.leaveDaysRequired,
-    required this.message,
-  });
 }
 
 /// Live preview of an employee's leave balance before and after a request.

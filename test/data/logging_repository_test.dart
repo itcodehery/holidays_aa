@@ -41,6 +41,9 @@ class FailingRepository implements LeaveRepository {
     List<PickedAttachment> files,
   ) async =>
       throw Exception('submit failed');
+
+  @override
+  Stream<void> watchChanges() => const Stream.empty();
 }
 
 void main() {

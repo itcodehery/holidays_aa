@@ -203,6 +203,13 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
         ref.watch(leaveDetailProvider(widget.request.id)).value ??
         widget.request;
 
+    final pendingList = ref.watch(pendingRequestsProvider).value ?? const [];
+    final historyList = ref.watch(historyRequestsProvider).value ?? const [];
+    final teamConflicts = LeavePolicy.findTeamConflicts(liveRequest, [
+      ...pendingList,
+      ...historyList,
+    ]);
+
     final canDecide =
         currentUser != null &&
         LeavePolicy.validateDecisionPermission(currentUser, liveRequest) ==
@@ -315,6 +322,8 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
             ),
           ),
           const SizedBox(height: 16),
+          _TeamConflictBanner(conflicts: teamConflicts),
+          const SizedBox(height: 16),
           Text(
             'Supporting Documents (${liveRequest.attachments.length})',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -350,6 +359,39 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final preset in const [
+                  'Approved, enjoy!',
+                  'Please reassign your tasks first',
+                  'Dates clash with schedule',
+                  'Please attach supporting proof',
+                ])
+                  ActionChip(
+                    backgroundColor: AppTheme.alabasterCanvas,
+                    side: const BorderSide(color: AppTheme.sandBorder),
+                    visualDensity: VisualDensity.compact,
+                    labelStyle: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.inkDark,
+                    ),
+                    label: Text(preset),
+                    onPressed: isSubmitting
+                        ? null
+                        : () {
+                            setState(() {
+                              _commentController.text = preset;
+                              _commentError = null;
+                            });
+                            _scrollToBottomSoon();
+                          },
+                  ),
+              ],
             ),
             const SizedBox(height: 10),
             TextField(
@@ -421,6 +463,75 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TeamConflictBanner extends StatelessWidget {
+  final List<LeaveRequest> conflicts;
+
+  const _TeamConflictBanner({required this.conflicts});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasConflicts = conflicts.isNotEmpty;
+    final bgColor = hasConflicts
+        ? AppTheme.terracottaSoft
+        : const Color(0xFFD9EFE2);
+    final accentColor = hasConflicts
+        ? AppTheme.terracotta
+        : const Color(0xFF1F6E42);
+
+    return Container(
+      key: const Key('team_conflict_banner'),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            hasConflicts ? LucideIcons.users : LucideIcons.userCheck,
+            size: 18,
+            color: accentColor,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasConflicts
+                      ? '${conflicts.length} ${conflicts.length == 1 ? 'teammate is' : 'teammates are'} also off on these dates'
+                      : 'No team overlap on these dates',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: accentColor,
+                  ),
+                ),
+                if (hasConflicts) ...[
+                  const SizedBox(height: 4),
+                  for (final c in conflicts)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        '• ${c.employeeName} (${AppDateUtils.formatRange(c.startDate, c.endDate)} · ${c.status.label})',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );

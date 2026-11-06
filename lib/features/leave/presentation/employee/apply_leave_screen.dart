@@ -16,8 +16,8 @@ import '../widgets/attachment_picker.dart';
 import '../widgets/date_range_field.dart';
 
 /// Fullscreen employee form screen for submitting a new leave request with live
-/// working-day calculation, two-stage approval warning banner, and proof
-/// validation.
+/// working-day calculation, live balance preview (`⭐ Live balance preview`),
+/// two-stage approval warning banner, and proof validation.
 class ApplyLeaveScreen extends ConsumerStatefulWidget {
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
@@ -153,6 +153,12 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
     final isSubmitting = actionState.isLoading;
     final workingDays = _workingDays;
     final attError = _attachmentValidationError;
+    final myRequests = ref.watch(myRequestsProvider).value ?? const [];
+    final balancePreview = LeavePolicy.computeBalancePreview(
+      leaveType: _leaveType,
+      existingRequests: myRequests,
+      requestedWorkingDays: workingDays,
+    );
     final isSubmitDisabled =
         isSubmitting || workingDays <= 0 || attError != null;
 
@@ -215,6 +221,8 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
                               }
                             },
                     ),
+                    const SizedBox(height: 12),
+                    _LiveBalancePreviewCard(preview: balancePreview),
                     const SizedBox(height: 14),
                     DateRangeField(
                       startDate: _startDate,
@@ -290,6 +298,122 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Editorial card showing the employee's live leave balance impact:
+/// e.g. "Annual Leave: 14 left → 11 after this request".
+class _LiveBalancePreviewCard extends StatelessWidget {
+  final LeaveBalancePreview preview;
+
+  const _LiveBalancePreviewCard({required this.preview});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOver = preview.exceedsBalance;
+    final accent = isOver ? const Color(0xFFB42318) : AppTheme.terracotta;
+    final bg = isOver ? const Color(0xFFFADCD9) : AppTheme.ivoryCard;
+    final ratioAfter = preview.allocated <= 0
+        ? 0.0
+        : (preview.remainingAfter.clamp(0, preview.allocated) /
+              preview.allocated);
+
+    return Container(
+      key: const Key('live_balance_preview_card'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: isOver
+                      ? const Color(0xFFF5C2BC)
+                      : AppTheme.terracottaSoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isOver ? LucideIcons.triangleAlert : LucideIcons.chartPie,
+                  size: 16,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${preview.leaveType.label} Balance Preview',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.inkMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${preview.remainingBefore} left → ${preview.remainingAfter} after this request',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: isOver ? accent : AppTheme.inkDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.alabasterCanvas,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${preview.allocated}d / yr',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.inkMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: ratioAfter,
+              minHeight: 6,
+              backgroundColor: AppTheme.warmTaupe,
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
+            ),
+          ),
+          if (isOver) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Note: This request exceeds your standard ${preview.leaveType.label} allocation by ${preview.remainingAfter.abs()} working ${preview.remainingAfter.abs() == 1 ? 'day' : 'days'}.',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: accent,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

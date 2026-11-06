@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -168,6 +169,7 @@ class InMemoryLeaveRepository implements LeaveRepository {
   final List<LeaveRequest> _requests;
   final Map<String, Uint8List> _blobs;
   final AppUser? Function()? currentUserResolver;
+  final StreamController<void> _changes = StreamController<void>.broadcast();
 
   AppUser? _actingUser;
   int _idCounter = 100;
@@ -346,6 +348,7 @@ class InMemoryLeaveRepository implements LeaveRepository {
     );
 
     _requests.insert(0, created);
+    _changes.add(null);
     return created;
   }
 
@@ -409,6 +412,7 @@ class InMemoryLeaveRepository implements LeaveRepository {
     );
 
     _requests[index] = updated;
+    _changes.add(null);
     return updated;
   }
 
@@ -430,6 +434,7 @@ class InMemoryLeaveRepository implements LeaveRepository {
       status: LeaveStatus.cancelled,
       updatedAt: DateTime.now(),
     );
+    _changes.add(null);
   }
 
   @override
@@ -440,6 +445,9 @@ class InMemoryLeaveRepository implements LeaveRepository {
     }
     return Uri.parse('https://example.com/${a.storagePath}');
   }
+
+  @override
+  Stream<void> watchChanges() => _changes.stream;
 
   /// Exposes raw attachment bytes when running in-memory for instant preview.
   Uint8List? getAttachmentBytes(String storagePath) => _blobs[storagePath];

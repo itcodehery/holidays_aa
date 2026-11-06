@@ -370,7 +370,7 @@ begin
     raise exception 'You can attach up to 5 files per request';
   end if;
 
-  if (p_leave_type in ('marriage', 'bereavement') or (p_leave_type = 'sick' and v_working_days > 2))
+  if (v_working_days > 3 or p_leave_type in ('marriage', 'bereavement') or (p_leave_type = 'sick' and v_working_days > 2))
      and v_att_count = 0 then
     raise exception 'Supporting documents are required for this leave';
   end if;

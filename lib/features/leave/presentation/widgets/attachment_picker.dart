@@ -183,54 +183,33 @@ class AttachmentPicker extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
               color: AppTheme.alabasterCanvas,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Recommended for ${leaveType.label}:',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.inkDark,
-                  ),
+                Icon(
+                  LucideIcons.listChecks,
+                  size: 15,
+                  color: isRequired ? AppTheme.terracotta : AppTheme.inkMuted,
                 ),
-                const SizedBox(height: 6),
-                for (final item in AttachmentPolicy.proofChecklist(leaveType))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isRequired
-                              ? LucideIcons.circleCheck
-                              : LucideIcons.sparkles,
-                          size: 13,
-                          color: isRequired
-                              ? AppTheme.terracotta
-                              : AppTheme.inkMuted,
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            item,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.inkMuted,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    AttachmentPolicy.proofChecklistText(leaveType),
+                    key: const Key('proof_checklist_text'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.inkDark,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
               ],
             ),
           ),

@@ -47,4 +47,5 @@ app.*.map.json
 # Local environment secrets
 .env
 *.tar.gz
+*.zip
 *.apk

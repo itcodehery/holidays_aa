@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:holidays/core/errors/app_exception.dart';
 import 'package:holidays/features/auth/data/auth_repository.dart';
 import 'package:holidays/features/leave/data/in_memory_leave_repository.dart';
+import 'package:holidays/features/leave/domain/attachment.dart';
 import 'package:holidays/features/leave/domain/leave_request.dart';
 import 'package:holidays/features/leave/domain/leave_status.dart';
 
@@ -39,7 +42,12 @@ void main() {
     'long leave goes manager -> HR -> approved, and records both approvals',
     () async {
       final repo = InMemoryLeaveRepository.seeded();
-      final r = await repo.submit(newRequest(days: 5), []);
+      final sampleProof = PickedAttachment(
+        'supporting_doc.pdf',
+        Uint8List.fromList([1, 2, 3, 4]),
+        'application/pdf',
+      );
+      final r = await repo.submit(newRequest(days: 5), [sampleProof]);
       expect(r.status, LeaveStatus.pendingManager);
       expect(r.requiresSecondApproval, true);
 

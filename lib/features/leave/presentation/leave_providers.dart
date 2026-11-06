@@ -54,8 +54,16 @@ final myRequestsFilterProvider =
       MyRequestsFilterNotifier.new,
     );
 
+/// Stream provider emitting whenever `leave_requests` or `leave_approvals`
+/// change in realtime (`⭐ Realtime updates`).
+final leaveRealtimeChangesProvider = StreamProvider<void>((ref) {
+  final repo = ref.watch(leaveRepositoryProvider);
+  return repo.watchChanges();
+});
+
 /// Fetches the current employee's own submitted leave requests.
 final myRequestsProvider = FutureProvider<List<LeaveRequest>>((ref) async {
+  ref.watch(leaveRealtimeChangesProvider);
   final user = ref.watch(currentUserProvider) ?? DemoUsers.employee;
   final repo = ref.watch(leaveRepositoryProvider);
   return repo.getMyRequests(user.id);
@@ -63,6 +71,7 @@ final myRequestsProvider = FutureProvider<List<LeaveRequest>>((ref) async {
 
 /// Fetches pending leave requests for the currently logged-in Manager or HR.
 final pendingRequestsProvider = FutureProvider<List<LeaveRequest>>((ref) async {
+  ref.watch(leaveRealtimeChangesProvider);
   final user = ref.watch(currentUserProvider) ?? DemoUsers.manager;
   final repo = ref.watch(leaveRepositoryProvider);
   return repo.getPendingFor(user);
@@ -70,6 +79,7 @@ final pendingRequestsProvider = FutureProvider<List<LeaveRequest>>((ref) async {
 
 /// Fetches historical / decided leave requests for Manager or HR.
 final historyRequestsProvider = FutureProvider<List<LeaveRequest>>((ref) async {
+  ref.watch(leaveRealtimeChangesProvider);
   final user = ref.watch(currentUserProvider) ?? DemoUsers.manager;
   final repo = ref.watch(leaveRepositoryProvider);
   return repo.getHistoryFor(user);
@@ -78,6 +88,7 @@ final historyRequestsProvider = FutureProvider<List<LeaveRequest>>((ref) async {
 /// Fetches a single leave request by ID.
 final leaveDetailProvider =
     FutureProvider.family<LeaveRequest?, String>((ref, id) async {
+      ref.watch(leaveRealtimeChangesProvider);
       final repo = ref.watch(leaveRepositoryProvider);
       return repo.getById(id);
     });

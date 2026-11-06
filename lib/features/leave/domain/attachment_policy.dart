@@ -12,7 +12,13 @@ class AttachmentPolicy {
 
   /// Determines whether proof documents are required, optional, or not needed
   /// based on the [type] of leave and [workingDays] duration.
+  ///
+  /// Any leave request above 3 working days (`workingDays > 3`) requires at
+  /// least one supporting document.
   static ProofRequirement proofRequirement(LeaveType type, int workingDays) {
+    if (workingDays > 3) {
+      return ProofRequirement.required;
+    }
     switch (type) {
       case LeaveType.marriage:
       case LeaveType.bereavement:
@@ -31,13 +37,16 @@ class AttachmentPolicy {
     final req = proofRequirement(type, workingDays);
     switch (req) {
       case ProofRequirement.required:
-        if (type == LeaveType.sick) {
+        if (type == LeaveType.sick && workingDays > 2) {
           return 'Required: attach a medical certificate or bills (sick leave > 2 working days).';
         }
         if (type == LeaveType.marriage) {
           return 'Required: attach a wedding invitation or marriage document.';
         }
-        return 'Required: attach supporting documentation for bereavement leave.';
+        if (type == LeaveType.bereavement) {
+          return 'Required: attach supporting documentation for bereavement leave.';
+        }
+        return 'Required: leaves above 3 working days require at least 1 supporting document.';
       case ProofRequirement.optional:
         return 'Optional: attach medical proof if available (PDF, JPG, PNG up to 5 MB).';
       case ProofRequirement.none:
@@ -45,35 +54,21 @@ class AttachmentPolicy {
     }
   }
 
-  /// Contextual checklist of recommended proof items per [LeaveType].
-  static List<String> proofChecklist(LeaveType type) {
+  /// Contextual checklist message per [LeaveType] (`⭐ Proof checklist per leave type`).
+  static String proofChecklistText(LeaveType type) {
     switch (type) {
       case LeaveType.marriage:
-        return const [
-          'Wedding invitation card',
-          'Marriage registration receipt / certificate',
-        ];
+        return 'Marriage leave: attach an invitation card or marriage registration certificate.';
       case LeaveType.bereavement:
-        return const [
-          'Family bereavement notice or hospital slip',
-          'Travel ticket or obituary confirmation',
-        ];
+        return 'Bereavement leave: attach a family notice, hospital slip, or travel confirmation.';
       case LeaveType.sick:
-        return const [
-          'Doctor\'s medical certificate (> 2 working days)',
-          'Prescription or lab / discharge summary',
-        ];
-      case LeaveType.maternityPaternity:
-        return const [
-          'Expected delivery / birth certificate',
-          'Hospital maternity / paternity confirmation note',
-        ];
+        return 'Sick leave: attach a doctor\'s prescription, medical certificate, or lab report.';
+      case LeaveType.unpaid:
+        return 'Unpaid leave: attach a manager-aligned handover note or supporting document.';
       case LeaveType.annual:
+        return 'Annual leave: attach a handover plan or travel itinerary (mandatory if > 3 working days).';
       case LeaveType.casual:
-        return const [
-          'Optional: Crew / team handover checklist',
-          'Optional: Travel itinerary if out of station',
-        ];
+        return 'Casual leave: attach supporting proof or handover summary (mandatory if > 3 working days).';
     }
   }
 

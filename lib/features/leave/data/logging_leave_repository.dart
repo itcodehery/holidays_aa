@@ -71,4 +71,7 @@ class LoggingLeaveRepository implements LeaveRepository {
         'getAttachmentUrl(attachmentId=${a.id})',
         () => _inner.getAttachmentUrl(a),
       );
+
+  @override
+  Stream<void> watchChanges() => _inner.watchChanges();
 }

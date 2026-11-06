@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../features/auth/presentation/account_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/leave/presentation/analytics/analytics_screen.dart';
 import '../../features/leave/presentation/employee/apply_leave_screen.dart';
 import '../../features/leave/presentation/employee/my_requests_screen.dart';
 import '../../features/leave/presentation/employee/request_detail_screen.dart';
@@ -15,7 +16,7 @@ import '../widgets/adaptive_scaffold.dart';
 
 final _routerLog = Logger('Router');
 
-/// Employee bottom navigation destinations: "Home", "Add Leave", and "Account".
+/// Employee bottom navigation destinations: "Home", "Add Leave", "Analytics", and "Account".
 const _employeeDestinations = <AdaptiveDestination>[
   AdaptiveDestination(
     label: 'Home',
@@ -30,6 +31,12 @@ const _employeeDestinations = <AdaptiveDestination>[
     route: '/employee/apply',
   ),
   AdaptiveDestination(
+    label: 'Analytics',
+    icon: LucideIcons.chartColumn,
+    selectedIcon: LucideIcons.chartColumn,
+    route: '/analytics',
+  ),
+  AdaptiveDestination(
     label: 'Account',
     icon: LucideIcons.user,
     selectedIcon: LucideIcons.user,
@@ -37,7 +44,7 @@ const _employeeDestinations = <AdaptiveDestination>[
   ),
 ];
 
-/// Manager/HR bottom navigation destinations: "Home", "History", and "Account".
+/// Manager/HR bottom navigation destinations: "Home", "History", "Analytics", and "Account".
 const _approverDestinations = <AdaptiveDestination>[
   AdaptiveDestination(
     label: 'Home',
@@ -50,6 +57,12 @@ const _approverDestinations = <AdaptiveDestination>[
     icon: LucideIcons.layers,
     selectedIcon: LucideIcons.layers,
     route: '/approver/history',
+  ),
+  AdaptiveDestination(
+    label: 'Analytics',
+    icon: LucideIcons.chartColumn,
+    selectedIcon: LucideIcons.chartColumn,
+    route: '/analytics',
   ),
   AdaptiveDestination(
     label: 'Account',
@@ -75,8 +88,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return isLoginRoute ? null : '/login';
       }
 
-      // Common account page accessible to all three roles
-      if (path == '/account') {
+      // Common analytics and account pages accessible to all three roles
+      if (path == '/account' || path == '/analytics') {
         return null;
       }
 
@@ -101,6 +114,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
+        path: '/analytics',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            final user = ref.watch(currentUserProvider);
+            final destinations = (user != null && user.isEmployee)
+                ? _employeeDestinations
+                : _approverDestinations;
+            return AdaptiveScaffold(
+              title: 'Leave Analytics',
+              destinations: destinations,
+              selectedIndex: 2,
+              onDestinationSelected: (idx) =>
+                  context.go(destinations[idx].route),
+              body: const AnalyticsScreen(),
+            );
+          },
+        ),
+      ),
+      GoRoute(
         path: '/account',
         builder: (context, state) => Consumer(
           builder: (context, ref, _) {
@@ -111,7 +143,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return AdaptiveScaffold(
               title: 'Account',
               destinations: destinations,
-              selectedIndex: 2,
+              selectedIndex: 3,
               onDestinationSelected: (idx) =>
                   context.go(destinations[idx].route),
               body: const AccountScreen(),

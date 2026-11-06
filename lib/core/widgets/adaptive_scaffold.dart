@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../features/auth/presentation/account_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
+import '../../features/leave/presentation/leave_providers.dart';
 import '../logging/log_buffer.dart';
 import '../theme/app_theme.dart';
 
@@ -62,6 +63,9 @@ class AdaptiveScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
     final user = ref.watch(currentUserProvider);
+    final pendingCount = (user != null && user.canApprove)
+        ? (ref.watch(pendingRequestsProvider).value?.length ?? 0)
+        : 0;
 
     final appBar = AppBar(
       backgroundColor: AppTheme.obsidian,
@@ -131,6 +135,7 @@ class AdaptiveScaffold extends ConsumerWidget {
           destinations: destinations,
           selectedIndex: selectedIndex,
           onDestinationSelected: onDestinationSelected,
+          pendingBadgeCount: pendingCount,
         ),
       );
     }
@@ -152,6 +157,10 @@ class AdaptiveScaffold extends ConsumerWidget {
                   _DesktopNavPill(
                     destination: destinations[i],
                     selected: i == selectedIndex,
+                    badgeCount:
+                        destinations[i].route == '/approver/pending'
+                            ? pendingCount
+                            : 0,
                     onTap: () => onDestinationSelected(i),
                   ),
                   const SizedBox(height: 6),
@@ -238,11 +247,13 @@ class _FloatingPillBottomBar extends StatelessWidget {
   final List<AdaptiveDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+  final int pendingBadgeCount;
 
   const _FloatingPillBottomBar({
     required this.destinations,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    this.pendingBadgeCount = 0,
   });
 
   @override
@@ -254,7 +265,7 @@ class _FloatingPillBottomBar extends StatelessWidget {
         child: Center(
           heightFactor: 1,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+            constraints: const BoxConstraints(maxWidth: 520),
             child: Container(
               height: 64,
               padding: const EdgeInsets.all(6),
@@ -288,7 +299,7 @@ class _FloatingPillBottomBar extends StatelessWidget {
                             duration: const Duration(milliseconds: 180),
                             curve: Curves.easeOutCubic,
                             height: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             decoration: BoxDecoration(
                               color: i == selectedIndex
                                   ? AppTheme.obsidianPillActive
@@ -302,19 +313,19 @@ class _FloatingPillBottomBar extends StatelessWidget {
                                   i == selectedIndex
                                       ? destinations[i].selectedIcon
                                       : destinations[i].icon,
-                                  size: 19,
+                                  size: 17,
                                   color: i == selectedIndex
                                       ? Colors.white
                                       : const Color(0xFFB8B4AC),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     destinations[i].label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 12.5,
+                                      fontSize: 11.5,
                                       fontWeight: i == selectedIndex
                                           ? FontWeight.w700
                                           : FontWeight.w500,
@@ -324,6 +335,29 @@ class _FloatingPillBottomBar extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                if (destinations[i].route ==
+                                        '/approver/pending' &&
+                                    pendingBadgeCount > 0) ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 1.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.terracotta,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '$pendingBadgeCount',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -343,11 +377,13 @@ class _FloatingPillBottomBar extends StatelessWidget {
 class _DesktopNavPill extends StatelessWidget {
   final AdaptiveDestination destination;
   final bool selected;
+  final int badgeCount;
   final VoidCallback onTap;
 
   const _DesktopNavPill({
     required this.destination,
     required this.selected,
+    this.badgeCount = 0,
     required this.onTap,
   });
 
@@ -379,6 +415,25 @@ class _DesktopNavPill extends StatelessWidget {
                   ),
                 ),
               ),
+              if (badgeCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.terracotta,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

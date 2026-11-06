@@ -39,18 +39,26 @@ void main() {
       );
     });
 
-    test('annual / casual / unpaid require no proof', () {
+    test('annual / casual / unpaid require no proof when <= 3 days, but require proof when > 3 days', () {
       expect(
-        AttachmentPolicy.proofRequirement(LeaveType.annual, 5),
+        AttachmentPolicy.proofRequirement(LeaveType.annual, 3),
         ProofRequirement.none,
+      );
+      expect(
+        AttachmentPolicy.proofRequirement(LeaveType.annual, 4),
+        ProofRequirement.required,
       );
       expect(
         AttachmentPolicy.proofRequirement(LeaveType.casual, 2),
         ProofRequirement.none,
       );
       expect(
-        AttachmentPolicy.proofRequirement(LeaveType.unpaid, 4),
+        AttachmentPolicy.proofRequirement(LeaveType.unpaid, 3),
         ProofRequirement.none,
+      );
+      expect(
+        AttachmentPolicy.proofRequirement(LeaveType.unpaid, 4),
+        ProofRequirement.required,
       );
     });
   });

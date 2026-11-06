@@ -38,4 +38,8 @@ abstract class LeaveRepository {
 
   /// Generates a short-lived signed URI (or in-memory data URI) to view [a].
   Future<Uri> getAttachmentUrl(Attachment a);
+
+  /// Emits an event whenever leave requests or approvals change in realtime
+  /// (`⭐ Realtime updates`).
+  Stream<void> watchChanges() => const Stream.empty();
 }

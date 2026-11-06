@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -214,5 +215,44 @@ class SupabaseLeaveRepository implements LeaveRepository {
     } catch (e) {
       throw mapToAppException(e);
     }
+  }
+
+  @override
+  Stream<void> watchChanges() {
+    late final StreamController<void> controller;
+    RealtimeChannel? channel;
+
+    controller = StreamController<void>.broadcast(
+      onListen: () {
+        channel = _client
+            .channel('interlude-leave-realtime')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'leave_requests',
+              callback: (_) {
+                if (!controller.isClosed) controller.add(null);
+              },
+            )
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'leave_approvals',
+              callback: (_) {
+                if (!controller.isClosed) controller.add(null);
+              },
+            )
+            .subscribe();
+      },
+      onCancel: () async {
+        final ch = channel;
+        channel = null;
+        if (ch != null) {
+          await _client.removeChannel(ch);
+        }
+      },
+    );
+
+    return controller.stream;
   }
 }
