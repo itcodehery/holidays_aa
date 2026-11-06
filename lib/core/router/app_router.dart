@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -13,39 +14,35 @@ import '../widgets/adaptive_scaffold.dart';
 
 final _routerLog = Logger('Router');
 
+/// Intentional two-option employee navigation: "Home" and "Add a Leave Request".
 const _employeeDestinations = <AdaptiveDestination>[
   AdaptiveDestination(
-    label: 'My Requests',
-    icon: Icons.list_alt_outlined,
-    selectedIcon: Icons.list_alt_rounded,
+    label: 'Home',
+    icon: LucideIcons.house,
+    selectedIcon: LucideIcons.house,
     route: '/employee/requests',
   ),
   AdaptiveDestination(
-    label: 'Apply',
-    icon: Icons.add_circle_outline_rounded,
-    selectedIcon: Icons.add_circle_rounded,
+    label: 'Add a Leave Request',
+    icon: LucideIcons.plus,
+    selectedIcon: LucideIcons.plus,
     route: '/employee/apply',
   ),
 ];
 
+/// Intentional two-option manager/HR navigation: "Home" and "History".
 const _approverDestinations = <AdaptiveDestination>[
   AdaptiveDestination(
-    label: 'Pending',
-    icon: Icons.pending_actions_outlined,
-    selectedIcon: Icons.pending_actions_rounded,
+    label: 'Home',
+    icon: LucideIcons.house,
+    selectedIcon: LucideIcons.house,
     route: '/approver/pending',
   ),
   AdaptiveDestination(
     label: 'History',
-    icon: Icons.history_outlined,
-    selectedIcon: Icons.history_rounded,
+    icon: LucideIcons.layers,
+    selectedIcon: LucideIcons.layers,
     route: '/approver/history',
-  ),
-  AdaptiveDestination(
-    label: 'Apply Leave',
-    icon: Icons.add_circle_outline_rounded,
-    selectedIcon: Icons.add_circle_rounded,
-    route: '/approver/apply',
   ),
 ];
 
@@ -73,7 +70,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // Manager or HR/Admin
       if (isLoginRoute || path == '/' || path.startsWith('/employee')) {
         _routerLog.fine('Redirecting ${user.role.name} to /approver/pending');
         return '/approver/pending';
@@ -94,11 +90,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           selectedIndex: 0,
           onDestinationSelected: (idx) =>
               context.go(_employeeDestinations[idx].route),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.go('/employee/apply'),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Apply Leave'),
-          ),
           body: const MyRequestsScreen(),
         ),
         routes: [
@@ -113,7 +104,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/employee/apply',
         builder: (context, state) => AdaptiveScaffold(
-          title: 'Apply for Leave',
+          title: 'Add a Leave Request',
           destinations: _employeeDestinations,
           selectedIndex: 1,
           onDestinationSelected: (idx) =>
@@ -141,17 +132,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           onDestinationSelected: (idx) =>
               context.go(_approverDestinations[idx].route),
           body: const PendingRequestsScreen(isHistory: true),
-        ),
-      ),
-      GoRoute(
-        path: '/approver/apply',
-        builder: (context, state) => AdaptiveScaffold(
-          title: 'Apply for Leave',
-          destinations: _approverDestinations,
-          selectedIndex: 2,
-          onDestinationSelected: (idx) =>
-              context.go(_approverDestinations[idx].route),
-          body: const ApplyLeaveScreen(),
         ),
       ),
     ],

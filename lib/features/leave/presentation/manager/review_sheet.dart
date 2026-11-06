@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../core/widgets/status_chip.dart';
 import '../../../auth/presentation/auth_controller.dart';
@@ -11,8 +13,9 @@ import '../leave_providers.dart';
 import '../widgets/approval_timeline.dart';
 import '../widgets/attachment_tile.dart';
 
-/// Manager / HR review component that adapts to bottom sheets (`< 600px`),
-/// modal dialogs (`600-1024px`), or an embedded master-detail pane (`> 1024px`).
+/// Borderless Manager / HR review component that adapts to bottom sheets
+/// (`< 600px`), modal dialogs (`600-1024px`), or an embedded master-detail pane
+/// (`> 1024px`).
 class ReviewSheet extends ConsumerStatefulWidget {
   final LeaveRequest request;
   final bool embedded;
@@ -23,8 +26,6 @@ class ReviewSheet extends ConsumerStatefulWidget {
     this.embedded = false,
   });
 
-  /// Opens [ReviewSheet] as a bottom sheet on compact screens (`< 600px`) or
-  /// as a centered dialog on medium screens (`>= 600px`).
   static Future<void> showAdaptive(
     BuildContext context,
     LeaveRequest request,
@@ -33,6 +34,7 @@ class ReviewSheet extends ConsumerStatefulWidget {
     if (width < 600) {
       await showModalBottomSheet<void>(
         context: context,
+        backgroundColor: AppTheme.ivoryCard,
         isScrollControlled: true,
         useSafeArea: true,
         showDragHandle: true,
@@ -47,6 +49,10 @@ class ReviewSheet extends ConsumerStatefulWidget {
       await showDialog<void>(
         context: context,
         builder: (_) => Dialog(
+          backgroundColor: AppTheme.ivoryCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640, maxHeight: 760),
             child: ReviewSheet(request: request),
@@ -80,10 +86,10 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
     }
     setState(() => _commentError = null);
 
-    // Confirmation step to prevent accidental approvals/rejections
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.ivoryCard,
         title: Text(
           decision == Decision.approve
               ? 'Confirm Approval'
@@ -185,7 +191,7 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${liveRequest.leaveType.label} • ${liveRequest.totalDays} working ${liveRequest.totalDays == 1 ? 'day' : 'days'}',
+                      '${liveRequest.leaveType.label} · ${liveRequest.totalDays} working ${liveRequest.totalDays == 1 ? 'day' : 'days'}',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: scheme.primary,
                         fontWeight: FontWeight.w600,
@@ -198,7 +204,7 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
               if (!widget.embedded) ...[
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const Icon(LucideIcons.x, size: 20),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -206,11 +212,10 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: scheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: scheme.outlineVariant),
+              color: AppTheme.alabasterCanvas,
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +223,7 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
                 Row(
                   children: [
                     Icon(
-                      Icons.calendar_today_outlined,
+                      LucideIcons.calendarDays,
                       size: 16,
                       color: scheme.primary,
                     ),
@@ -228,31 +233,31 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
                         liveRequest.startDate,
                         liveRequest.endDate,
                       ),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
                     if (liveRequest.requiresSecondApproval)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 9,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: scheme.tertiaryContainer,
-                          borderRadius: BorderRadius.circular(6),
+                          color: AppTheme.terracottaSoft,
+                          borderRadius: BorderRadius.circular(999),
                         ),
-                        child: Text(
-                          '2-Stage Required (> 3 days)',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: scheme.onTertiaryContainer,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        child: const Text(
+                          '2-Stage (> 3 days)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.terracotta,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                   ],
                 ),
-                const Divider(height: 20),
+                const SizedBox(height: 12),
                 Text(
                   'Employee Reason',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -293,7 +298,7 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
           const SizedBox(height: 12),
           ApprovalTimeline(request: liveRequest),
           if (canDecide) ...[
-            const Divider(height: 28),
+            const SizedBox(height: 20),
             Text(
               liveRequest.status == LeaveStatus.pendingManager
                   ? 'Stage 1 Decision (Manager)'
@@ -309,6 +314,7 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
               enabled: !isSubmitting,
               maxLines: 2,
               decoration: InputDecoration(
+                fillColor: AppTheme.alabasterCanvas,
                 labelText: 'Reviewer Comment (Required on Reject)',
                 hintText: 'Add a note for the employee or HR…',
                 errorText: _commentError,
@@ -329,11 +335,11 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
                         ? null
                         : () => _handleDecision(Decision.reject),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: scheme.error,
-                      side: BorderSide(color: scheme.error),
+                      backgroundColor: const Color(0xFFFADCD9),
+                      foregroundColor: const Color(0xFFB42318),
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(LucideIcons.x, size: 18),
                     label: const Text('Reject'),
                   ),
                 ),
@@ -351,9 +357,12 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : const Icon(Icons.check_rounded),
+                        : const Icon(LucideIcons.check, size: 18),
                     label: Text(
                       liveRequest.status == LeaveStatus.pendingManager &&
                               liveRequest.requiresSecondApproval

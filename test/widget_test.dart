@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: App()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Holiday'), findsOneWidget);
+    expect(find.text('HOLIDAY'), findsOneWidget);
     expect(find.text('Quick Demo Accounts'), findsOneWidget);
   });
 }

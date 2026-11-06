@@ -3,14 +3,16 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../domain/attachment.dart';
 import '../../domain/attachment_policy.dart';
 import '../../domain/leave_status.dart';
 
-/// Attachment picker widget with dynamic proof requirement guidance, file
-/// validation (`AttachmentPolicy.validateFile`), and removable file chips.
+/// Borderless attachment picker widget with dynamic proof requirement guidance,
+/// file validation (`AttachmentPolicy.validateFile`), and removable file chips.
 class AttachmentPicker extends StatelessWidget {
   final LeaveType leaveType;
   final int workingDays;
@@ -113,29 +115,32 @@ class AttachmentPicker extends StatelessWidget {
     final isRequired = req == ProofRequirement.required;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: errorText != null
-              ? scheme.error
-              : isRequired && files.isEmpty
-                  ? scheme.tertiary
-                  : scheme.outlineVariant,
-        ),
+        color: AppTheme.ivoryCard,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.attach_file_rounded,
-                size: 20,
-                color: isRequired ? scheme.tertiary : scheme.primary,
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isRequired
+                      ? AppTheme.terracottaSoft
+                      : AppTheme.warmTaupe,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  LucideIcons.paperclip,
+                  size: 18,
+                  color: isRequired ? AppTheme.terracotta : AppTheme.inkDark,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Supporting Documents (${files.length}/${AttachmentPolicy.maxFiles})',
@@ -145,11 +150,14 @@ class AttachmentPicker extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isRequired
-                      ? scheme.tertiaryContainer
-                      : scheme.surfaceContainerHighest,
+                      ? AppTheme.terracottaSoft
+                      : AppTheme.warmTaupe,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -160,7 +168,7 @@ class AttachmentPicker extends StatelessWidget {
                   },
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: isRequired
-                        ? scheme.onTertiaryContainer
+                        ? AppTheme.terracotta
                         : scheme.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
                   ),
@@ -168,7 +176,7 @@ class AttachmentPicker extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             helper,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -182,10 +190,13 @@ class AttachmentPicker extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 key: const Key('pick_attachment_button'),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppTheme.alabasterCanvas,
+                ),
                 onPressed: files.length >= AttachmentPolicy.maxFiles
                     ? null
                     : () => _pickFiles(context),
-                icon: const Icon(Icons.upload_file_rounded, size: 18),
+                icon: const Icon(LucideIcons.upload, size: 16),
                 label: const Text('Attach File (PDF / JPG / PNG)'),
               ),
               TextButton.icon(
@@ -193,7 +204,7 @@ class AttachmentPicker extends StatelessWidget {
                 onPressed: files.length >= AttachmentPolicy.maxFiles
                     ? null
                     : () => _addSampleProof(context),
-                icon: const Icon(Icons.description_outlined, size: 18),
+                icon: const Icon(LucideIcons.fileText, size: 16),
                 label: const Text('Attach Demo Proof'),
               ),
             ],
@@ -206,12 +217,15 @@ class AttachmentPicker extends StatelessWidget {
               children: [
                 for (var i = 0; i < files.length; i++)
                   InputChip(
+                    backgroundColor: AppTheme.alabasterCanvas,
+                    side: BorderSide.none,
                     avatar: Icon(
                       files[i].name.toLowerCase().endsWith('.pdf')
-                          ? Icons.picture_as_pdf_outlined
-                          : Icons.image_outlined,
-                      size: 16,
+                          ? LucideIcons.fileText
+                          : LucideIcons.image,
+                      size: 15,
                     ),
+                    deleteIcon: const Icon(LucideIcons.x, size: 14),
                     label: Text(
                       '${files[i].name} (${AppDateUtils.formatBytes(files[i].sizeBytes)})',
                     ),

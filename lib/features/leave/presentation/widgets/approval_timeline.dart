@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../domain/leave_approval.dart';
 import '../../domain/leave_request.dart';
@@ -25,7 +27,6 @@ class ApprovalTimeline extends StatelessWidget {
     final stage1 = _approvalForStage(1);
     final stage2 = _approvalForStage(2);
 
-    // Determine whether Stage 1 was bypassed (e.g., manager's own leave)
     final bypassedStage1 =
         stage1 == null &&
         (request.status == LeaveStatus.pendingHr || stage2 != null);
@@ -37,8 +38,7 @@ class ApprovalTimeline extends StatelessWidget {
             'By ${request.employeeName} on ${AppDateUtils.formatDateTime(request.createdAt)}',
         state: _StepVisualState.completed,
       ),
-      if (!bypassedStage1)
-        _buildStage1Step(stage1),
+      if (!bypassedStage1) _buildStage1Step(stage1),
       if (request.requiresSecondApproval || bypassedStage1 || stage2 != null)
         _buildStage2Step(stage1, stage2, bypassedStage1),
       if (request.status == LeaveStatus.cancelled)
@@ -158,17 +158,31 @@ class _TimelineStepTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final (Color dotColor, IconData icon) = switch (data.state) {
-      _StepVisualState.completed => (const Color(0xFF16A34A), Icons.check),
-      _StepVisualState.active => (
-        const Color(0xFFD97706),
-        Icons.hourglass_top_rounded,
+    final (Color bg, Color fg, IconData icon) = switch (data.state) {
+      _StepVisualState.completed => (
+        const Color(0xFFD9F0E3),
+        const Color(0xFF18794E),
+        LucideIcons.check,
       ),
-      _StepVisualState.rejected => (scheme.error, Icons.close),
-      _StepVisualState.cancelled => (scheme.outline, Icons.remove),
+      _StepVisualState.active => (
+        AppTheme.terracottaSoft,
+        AppTheme.terracotta,
+        LucideIcons.hourglass,
+      ),
+      _StepVisualState.rejected => (
+        const Color(0xFFFADCD9),
+        const Color(0xFFB42318),
+        LucideIcons.x,
+      ),
+      _StepVisualState.cancelled => (
+        AppTheme.warmTaupe,
+        AppTheme.inkMuted,
+        LucideIcons.minus,
+      ),
       _StepVisualState.upcoming => (
-        scheme.outlineVariant,
-        Icons.circle_outlined,
+        AppTheme.alabasterCanvas,
+        AppTheme.inkMuted,
+        LucideIcons.circle,
       ),
     };
 
@@ -181,20 +195,19 @@ class _TimelineStepTile extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
-                    color: dotColor.withValues(alpha: 0.15),
+                    color: bg,
                     shape: BoxShape.circle,
-                    border: Border.all(color: dotColor, width: 1.5),
                   ),
-                  child: Icon(icon, size: 15, color: dotColor),
+                  child: Icon(icon, size: 15, color: fg),
                 ),
                 if (!isLast)
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: scheme.outlineVariant,
+                      color: AppTheme.warmTaupe,
                     ),
                   ),
               ],
@@ -210,7 +223,7 @@ class _TimelineStepTile extends StatelessWidget {
                   Text(
                     data.title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -224,23 +237,20 @@ class _TimelineStepTile extends StatelessWidget {
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest.withValues(
-                          alpha: 0.5,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: scheme.outlineVariant),
+                        color: AppTheme.alabasterCanvas,
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
-                            Icons.format_quote_rounded,
-                            size: 16,
+                            LucideIcons.quote,
+                            size: 15,
                             color: scheme.primary,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               data.comment!,

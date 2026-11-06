@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/editorial_summary_header.dart';
@@ -13,8 +14,9 @@ import '../leave_providers.dart';
 import '../widgets/leave_card.dart';
 import 'review_sheet.dart';
 
-/// Manager and HR/Admin queue screen for reviewing pending requests (or
-/// browsing historical decisions when [isHistory] is `true`).
+/// Manager and HR/Admin queue screen in the two-tone editorial layout for
+/// reviewing pending requests (or browsing historical decisions when
+/// [isHistory] is `true`).
 class PendingRequestsScreen extends ConsumerStatefulWidget {
   final bool isHistory;
 
@@ -51,7 +53,8 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
         .where((r) => r.attachments.isNotEmpty)
         .length;
     final firstName = user.fullName.split(' ').first;
-    final stageLabel = user.role == Role.hr ? 'Stage 2 (HR)' : 'Stage 1 (Manager)';
+    final stageLabel =
+        user.role == Role.hr ? 'Stage 2 (HR)' : 'Stage 1 (Manager)';
 
     return ColoredBox(
       color: AppTheme.obsidian,
@@ -66,7 +69,9 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                     EditorialSummaryHeader.highlightSpan(
                       '${listItems.length} historical ${listItems.length == 1 ? 'record' : 'records'}',
                     ),
-                    const TextSpan(text: ' across your organization, including '),
+                    const TextSpan(
+                      text: ' across your organization, including ',
+                    ),
                     EditorialSummaryHeader.highlightSpan(
                       '$twoStageCount multi-stage leaves',
                     ),
@@ -89,43 +94,55 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                   ],
             metrics: [
               EditorialMetric(
-                icon: Icons.inbox_outlined,
+                icon: LucideIcons.inbox,
                 label: '${listItems.length} in view',
               ),
               EditorialMetric(
-                icon: Icons.verified_user_outlined,
-                label: stageLabel,
+                icon: LucideIcons.shieldCheck,
+                label: user.role == Role.hr ? 'Stage 2 • HR' : 'Stage 1 • Mgr',
               ),
               EditorialMetric(
-                icon: Icons.attach_file_rounded,
-                label: '$withAttachments with proof',
+                icon: LucideIcons.trendingUp,
+                label: '+$withAttachments with proof',
                 accentColor: AppTheme.sageGreen,
               ),
             ],
           ),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+              decoration: const BoxDecoration(
+                color: AppTheme.alabasterCanvas,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(32),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Center(
                     child: Container(
-                      width: 40,
+                      width: 42,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                        color: const Color(0xFFC8C3B7),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
+                    child: Text(
+                      widget.isHistory
+                          ? 'Decision history'
+                          : 'Awaiting your review',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.inkDark,
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: asyncList.when(
                       loading: () =>
@@ -138,8 +155,8 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                         if (requests.isEmpty) {
                           return EmptyState(
                             icon: widget.isHistory
-                                ? Icons.history_rounded
-                                : Icons.task_alt_rounded,
+                                ? LucideIcons.history
+                                : LucideIcons.circleCheck,
                             title: widget.isHistory
                                 ? 'No request history yet'
                                 : 'All caught up!',
@@ -164,7 +181,12 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                 child: RefreshIndicator(
                                   onRefresh: () => ref.refresh(provider.future),
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.all(20),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      22,
+                                      12,
+                                      22,
+                                      32,
+                                    ),
                                     itemCount: requests.length,
                                     separatorBuilder: (_, _) =>
                                         const SizedBox(height: 12),
@@ -184,7 +206,6 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                   ),
                                 ),
                               ),
-                              const VerticalDivider(width: 1),
                               Expanded(
                                 child: Card(
                                   margin: const EdgeInsets.all(20),
@@ -203,13 +224,18 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                           return RefreshIndicator(
                             onRefresh: () => ref.refresh(provider.future),
                             child: GridView.builder(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.fromLTRB(
+                                22,
+                                12,
+                                22,
+                                110,
+                              ),
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
                                     mainAxisSpacing: 12,
                                     crossAxisSpacing: 12,
-                                    mainAxisExtent: 200,
+                                    mainAxisExtent: 196,
                                   ),
                               itemCount: requests.length,
                               itemBuilder: (context, index) {
@@ -229,7 +255,12 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                         return RefreshIndicator(
                           onRefresh: () => ref.refresh(provider.future),
                           child: ListView.separated(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.fromLTRB(
+                              22,
+                              12,
+                              22,
+                              110,
+                            ),
                             itemCount: requests.length,
                             separatorBuilder: (_, _) =>
                                 const SizedBox(height: 12),

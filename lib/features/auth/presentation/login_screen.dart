@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_theme.dart';
@@ -7,8 +8,8 @@ import '../data/auth_repository.dart';
 import '../domain/app_user.dart';
 import 'auth_controller.dart';
 
-/// Email/password login screen with one-tap "Quick Demo Login" buttons for the
-/// three seeded personas (`Employee`, `Manager`, `HR / Admin`).
+/// Clean, centered login form with email/password fields, a Sign In button,
+/// and one-tap Quick Demo Account buttons for evaluation.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -63,9 +64,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.ivoryCard,
         title: const Row(
           children: [
-            Icon(Icons.cloud_outlined),
+            Icon(LucideIcons.cloud, size: 20),
             SizedBox(width: 8),
             Expanded(child: Text('Supabase Backend Configuration')),
           ],
@@ -83,6 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextField(
                 controller: urlCtrl,
                 decoration: const InputDecoration(
+                  fillColor: AppTheme.alabasterCanvas,
                   labelText: 'Supabase Project URL',
                   hintText: 'https://<project-ref>.supabase.co',
                 ),
@@ -91,6 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextField(
                 controller: keyCtrl,
                 decoration: const InputDecoration(
+                  fillColor: AppTheme.alabasterCanvas,
                   labelText: 'Publishable / Anon Key',
                   hintText: 'sb_publishable_... or eyJ...',
                 ),
@@ -146,197 +150,191 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authControllerProvider);
     final isSupabaseConnected = ref.watch(supabaseBackendModeProvider);
     final isLoading = authState.isLoading;
-    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: AppTheme.alabasterCanvas,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: AppTheme.ivoryCard,
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Brand Header
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
-                              color: scheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppTheme.obsidian,
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: Icon(
-                              Icons.event_available_rounded,
-                              color: scheme.onPrimaryContainer,
-                              size: 28,
+                            child: const Icon(
+                              LucideIcons.sparkles,
+                              color: Color(0xFFF5F2EB),
+                              size: 20,
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        'Holiday',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTheme.brandTitleStyle(
-                                          fontSize: 30,
-                                          color: scheme.onSurface,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: AppTheme.terracotta,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  'Employee Leave Management System',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: scheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
+                          const SizedBox(width: 12),
+                          Text(
+                            'HOLIDAY',
+                            style: AppTheme.brandTitleStyle(
+                              fontSize: 34,
+                              color: AppTheme.inkDark,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.terracotta,
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: ActionChip(
-                          avatar: Icon(
-                            isSupabaseConnected
-                                ? Icons.cloud_done_rounded
-                                : Icons.cloud_upload_outlined,
-                            size: 16,
-                            color: isSupabaseConnected
-                                ? AppTheme.sageGreen
-                                : scheme.primary,
-                          ),
-                          label: Text(
-                            isSupabaseConnected
-                                ? 'Supabase Live'
-                                : 'Connect Supabase',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onPressed: _showSupabaseConfigDialog,
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Sign in to manage your leave requests and approvals',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.inkMuted,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            TextFormField(
-                              controller: _emailController,
-                              enabled: !isLoading,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'Work Email',
-                                prefixIcon: Icon(Icons.email_outlined),
-                              ),
-                              validator: (val) =>
-                                  (val == null || val.trim().isEmpty)
-                                  ? 'Enter your work email'
-                                  : null,
-                            ),
-                            const SizedBox(height: 14),
-                            TextFormField(
-                              controller: _passwordController,
-                              enabled: !isLoading,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: Icon(Icons.lock_outline_rounded),
-                              ),
-                              validator: (val) => (val == null || val.isEmpty)
-                                  ? 'Enter your password'
-                                  : null,
-                            ),
-                            const SizedBox(height: 18),
-                            SizedBox(
-                              height: 48,
-                              child: FilledButton.icon(
-                                onPressed: isLoading ? null : _submitEmailLogin,
-                                icon: isLoading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.login_rounded),
-                                label: const Text('Sign In'),
-                              ),
-                            ),
-                          ],
+                      // Email Field
+                      TextFormField(
+                        controller: _emailController,
+                        enabled: !isLoading,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          fillColor: AppTheme.alabasterCanvas,
+                          labelText: 'Work Email',
+                          prefixIcon: Icon(LucideIcons.mail, size: 18),
+                        ),
+                        validator: (val) => (val == null || val.trim().isEmpty)
+                            ? 'Enter your work email'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      // Password Field
+                      TextFormField(
+                        controller: _passwordController,
+                        enabled: !isLoading,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          fillColor: AppTheme.alabasterCanvas,
+                          labelText: 'Password',
+                          prefixIcon: Icon(LucideIcons.lock, size: 18),
+                        ),
+                        validator: (val) => (val == null || val.isEmpty)
+                            ? 'Enter your password'
+                            : null,
+                      ),
+                      const SizedBox(height: 20),
+                      // Sign In Button
+                      SizedBox(
+                        height: 50,
+                        child: FilledButton.icon(
+                          onPressed: isLoading ? null : _submitEmailLogin,
+                          icon: isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(LucideIcons.logIn, size: 18),
+                          label: const Text('Sign In'),
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Row(
+                      const Row(
                         children: [
-                          const Expanded(child: Divider()),
+                          Expanded(child: Divider()),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
                               'Quick Demo Accounts',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.inkMuted,
+                              ),
                             ),
                           ),
-                          const Expanded(child: Divider()),
+                          Expanded(child: Divider()),
                         ],
                       ),
                       const SizedBox(height: 14),
-                      _DemoAccountButton(
+                      _QuickRoleTile(
                         user: DemoUsers.employee,
-                        subtitle:
-                            'Submit requests, attach proof, view approval timeline',
-                        icon: Icons.person_outline_rounded,
+                        roleTag: 'Employee',
+                        icon: LucideIcons.user,
                         enabled: !isLoading,
                         onTap: () => _quickLogin(DemoUsers.employee),
                       ),
                       const SizedBox(height: 8),
-                      _DemoAccountButton(
+                      _QuickRoleTile(
                         user: DemoUsers.manager,
-                        subtitle:
-                            'Approve or reject direct reports (Stage 1 queue)',
-                        icon: Icons.supervisor_account_outlined,
+                        roleTag: 'Manager • Stage 1',
+                        icon: LucideIcons.users,
                         enabled: !isLoading,
                         onTap: () => _quickLogin(DemoUsers.manager),
                       ),
                       const SizedBox(height: 8),
-                      _DemoAccountButton(
+                      _QuickRoleTile(
                         user: DemoUsers.hr,
-                        subtitle:
-                            'Stage 2 approval for > 3 working days & full history',
-                        icon: Icons.admin_panel_settings_outlined,
+                        roleTag: 'HR • Stage 2',
+                        icon: LucideIcons.shieldCheck,
                         enabled: !isLoading,
                         onTap: () => _quickLogin(DemoUsers.hr),
+                      ),
+                      const SizedBox(height: 16),
+                      // Subtle Supabase Backend toggle
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: isLoading
+                              ? null
+                              : _showSupabaseConfigDialog,
+                          icon: Icon(
+                            isSupabaseConnected
+                                ? LucideIcons.cloudCheck
+                                : LucideIcons.cloud,
+                            size: 15,
+                            color: isSupabaseConnected
+                                ? AppTheme.sageGreen
+                                : AppTheme.inkMuted,
+                          ),
+                          label: Text(
+                            isSupabaseConnected
+                                ? 'Supabase Backend Connected'
+                                : 'Configure Supabase Backend',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.inkMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -350,16 +348,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-class _DemoAccountButton extends StatelessWidget {
+class _QuickRoleTile extends StatelessWidget {
   final AppUser user;
-  final String subtitle;
+  final String roleTag;
   final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
 
-  const _DemoAccountButton({
+  const _QuickRoleTile({
     required this.user,
-    required this.subtitle,
+    required this.roleTag,
     required this.icon,
     required this.enabled,
     required this.onTap,
@@ -367,39 +365,52 @@ class _DemoAccountButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return OutlinedButton(
-      onPressed: enabled ? onTap : null,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: scheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${user.fullName} (${user.role.label})',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+    return Material(
+      color: AppTheme.alabasterCanvas,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
+            children: [
+              Icon(icon, size: 17, color: AppTheme.inkDark),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  user.fullName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.inkDark,
                   ),
                 ),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.ivoryCard,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  roleTag,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.terracotta,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                LucideIcons.chevronRight,
+                size: 16,
+                color: AppTheme.inkMuted,
+              ),
+            ],
           ),
-          const Icon(Icons.chevron_right_rounded),
-        ],
+        ),
       ),
     );
   }

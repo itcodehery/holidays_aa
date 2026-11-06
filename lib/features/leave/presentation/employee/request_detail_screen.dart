@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/status_chip.dart';
@@ -9,9 +11,9 @@ import '../leave_providers.dart';
 import '../widgets/approval_timeline.dart';
 import '../widgets/attachment_tile.dart';
 
-/// Full detail screen for a single [LeaveRequest], displaying metadata,
-/// uploaded proof attachments, the multi-stage [ApprovalTimeline], and a
-/// Cancel action while pending.
+/// Full detail screen for a single [LeaveRequest] in the two-tone editorial
+/// layout, displaying metadata, uploaded proof attachments, the multi-stage
+/// [ApprovalTimeline], and a Cancel action while pending.
 class RequestDetailScreen extends ConsumerWidget {
   final String requestId;
   final bool embedded;
@@ -45,11 +47,26 @@ class RequestDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Leave Request Details')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: content,
+      backgroundColor: AppTheme.obsidian,
+      appBar: AppBar(
+        backgroundColor: AppTheme.obsidian,
+        title: Text(
+          'Holiday',
+          style: AppTheme.brandTitleStyle(fontSize: 24),
+        ),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          color: AppTheme.alabasterCanvas,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: content,
+          ),
         ),
       ),
     );
@@ -65,6 +82,7 @@ class _RequestDetailBody extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.ivoryCard,
         title: const Text('Cancel Leave Request?'),
         content: const Text(
           'Are you sure you want to cancel this pending leave request? This action cannot be undone.',
@@ -108,13 +126,13 @@ class _RequestDetailBody extends ConsumerWidget {
     final isMutating = actionState.isLoading;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -142,7 +160,7 @@ class _RequestDetailBody extends ConsumerWidget {
                       StatusChip(status: request.status),
                     ],
                   ),
-                  const Divider(height: 28),
+                  const SizedBox(height: 20),
                   Wrap(
                     spacing: 24,
                     runSpacing: 16,
@@ -153,20 +171,20 @@ class _RequestDetailBody extends ConsumerWidget {
                           request.startDate,
                           request.endDate,
                         ),
-                        icon: Icons.calendar_today_outlined,
+                        icon: LucideIcons.calendarDays,
                       ),
                       _DetailStat(
                         label: 'Duration',
                         value:
                             '${request.totalDays} working ${request.totalDays == 1 ? 'day' : 'days'}',
-                        icon: Icons.work_history_outlined,
+                        icon: LucideIcons.clock,
                       ),
                       _DetailStat(
                         label: 'Approval Workflow',
                         value: request.requiresSecondApproval
                             ? 'Two-Stage (Manager → HR)'
                             : 'Single-Stage (Manager)',
-                        icon: Icons.account_tree_outlined,
+                        icon: LucideIcons.gitBranch,
                       ),
                     ],
                   ),
@@ -177,14 +195,13 @@ class _RequestDetailBody extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: scheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: scheme.outlineVariant),
+                      color: AppTheme.alabasterCanvas,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(request.reason),
                   ),
@@ -194,10 +211,13 @@ class _RequestDetailBody extends ConsumerWidget {
                       alignment: Alignment.centerRight,
                       child: OutlinedButton.icon(
                         key: const Key('cancel_request_button'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: AppTheme.alabasterCanvas,
+                        ),
                         onPressed: isMutating
                             ? null
                             : () => _confirmCancel(context, ref),
-                        icon: const Icon(Icons.cancel_outlined),
+                        icon: const Icon(LucideIcons.circleX, size: 17),
                         label: const Text('Cancel Request'),
                       ),
                     ),
@@ -209,7 +229,7 @@ class _RequestDetailBody extends ConsumerWidget {
           const SizedBox(height: 16),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -244,7 +264,7 @@ class _RequestDetailBody extends ConsumerWidget {
           const SizedBox(height: 16),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -283,8 +303,16 @@ class _DetailStat extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: scheme.primary),
-        const SizedBox(width: 8),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppTheme.terracottaSoft,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 17, color: AppTheme.terracotta),
+        ),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -297,7 +325,7 @@ class _DetailStat extends StatelessWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

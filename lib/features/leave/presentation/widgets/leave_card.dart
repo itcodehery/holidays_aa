@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
@@ -6,8 +7,10 @@ import '../../../../core/widgets/status_chip.dart';
 import '../../domain/leave_request.dart';
 import '../../domain/leave_status.dart';
 
-/// Summary card for a [LeaveRequest] styled with warm editorial minimalism:
-/// squircle icon badge, inline pill callouts, and accessible [StatusChip].
+/// Borderless summary card for a [LeaveRequest] styled with the two-tone
+/// editorial design system: soft ivory card (`#F7F5F0`) on warm stone canvas
+/// (`#EAE6DD`), `48x48` squircle Lucide icon container, inline pill badges, and
+/// trailing action icon.
 class LeaveCard extends StatelessWidget {
   final LeaveRequest request;
   final VoidCallback? onTap;
@@ -27,17 +30,17 @@ class LeaveCard extends StatelessWidget {
   IconData _leaveTypeIcon(LeaveType type) {
     switch (type) {
       case LeaveType.annual:
-        return Icons.beach_access_outlined;
+        return LucideIcons.sun;
       case LeaveType.sick:
-        return Icons.medical_services_outlined;
+        return LucideIcons.stethoscope;
       case LeaveType.casual:
-        return Icons.wb_sunny_outlined;
+        return LucideIcons.sparkles;
       case LeaveType.unpaid:
-        return Icons.money_off_csred_outlined;
+        return LucideIcons.coins;
       case LeaveType.marriage:
-        return Icons.favorite_border_rounded;
+        return LucideIcons.heart;
       case LeaveType.bereavement:
-        return Icons.spa_outlined;
+        return LucideIcons.heartHandshake;
     }
   }
 
@@ -48,48 +51,48 @@ class LeaveCard extends StatelessWidget {
     final dayLabel =
         '${request.totalDays} working ${request.totalDays == 1 ? 'day' : 'days'}';
 
-    // Squircle badge uses warm terracotta when pending/actionable, or warm taupe
-    // for historical/completed items.
-    final squircleBg = isActionable
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerHighest;
-    final squircleFg = isActionable
-        ? scheme.primary
-        : scheme.onSurfaceVariant;
+    // Squircle badge uses terracotta blush or solid terracotta when pending,
+    // and warm taupe for completed/historical requests.
+    final squircleBg = request.requiresSecondApproval && isActionable
+        ? AppTheme.terracotta
+        : isActionable
+            ? AppTheme.terracottaSoft
+            : AppTheme.warmTaupe;
+    final squircleFg = request.requiresSecondApproval && isActionable
+        ? Colors.white
+        : isActionable
+            ? AppTheme.terracotta
+            : AppTheme.inkDark;
 
     return Card(
-      color: selected
-          ? scheme.primaryContainer.withValues(alpha: 0.35)
-          : scheme.surface,
+      elevation: 0,
+      color: selected ? const Color(0xFFF2E6DF) : AppTheme.ivoryCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: selected ? scheme.primary : scheme.outlineVariant,
-          width: selected ? 1.5 : 1,
-        ),
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide.none,
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 46,
-                    height: 46,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: squircleBg,
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       _leaveTypeIcon(request.leaveType),
                       color: squircleFg,
-                      size: 22,
+                      size: 21,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -109,13 +112,16 @@ class LeaveCard extends StatelessWidget {
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.2,
+                                  ),
                             ),
                             if (request.requiresSecondApproval)
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
+                                  horizontal: 9,
+                                  vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppTheme.terracottaSoft,
@@ -147,6 +153,12 @@ class LeaveCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   StatusChip(status: request.status, compact: true),
+                  const SizedBox(width: 6),
+                  Icon(
+                    LucideIcons.chevronRight,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -168,15 +180,15 @@ class LeaveCard extends StatelessWidget {
                   children: [
                     if (request.attachments.isNotEmpty)
                       _MetaPill(
-                        icon: Icons.attach_file_rounded,
+                        icon: LucideIcons.paperclip,
                         label:
                             '${request.attachments.length} ${request.attachments.length == 1 ? 'proof file' : 'proof files'}',
                       ),
                     if (showStageBadge && request.status.isPending)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
+                          horizontal: 10,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: scheme.tertiaryContainer,
@@ -214,16 +226,16 @@ class _MetaPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
+        color: AppTheme.alabasterCanvas,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 13, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(

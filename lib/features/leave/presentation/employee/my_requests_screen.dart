@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/editorial_summary_header.dart';
@@ -14,9 +15,8 @@ import '../leave_providers.dart';
 import '../widgets/leave_card.dart';
 import 'request_detail_screen.dart';
 
-/// Employee's "My Requests" screen featuring the dark editorial summary banner,
-/// status filter chips (`All` / `Pending` / `Approved` / `Rejected`),
-/// pull-to-refresh, and responsive layout.
+/// Employee's "My Requests" screen featuring the two-tone obsidian summary
+/// header + warm stone sheet (`#EAE6DD`) + borderless ivory cards (`#F7F5F0`).
 class MyRequestsScreen extends ConsumerStatefulWidget {
   const MyRequestsScreen({super.key});
 
@@ -75,91 +75,110 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
           EditorialSummaryHeader(
             greetingName: firstName,
             summarySpans: [
-              const TextSpan(text: 'You currently have '),
+              const TextSpan(text: 'Here is your leave summary. You have '),
               EditorialSummaryHeader.highlightSpan(
                 '$pendingCount pending ${pendingCount == 1 ? 'request' : 'requests'}',
               ),
-              const TextSpan(text: ', '),
+              const TextSpan(text: ', received '),
               EditorialSummaryHeader.highlightSpan(
-                '$approvedDays working ${approvedDays == 1 ? 'day' : 'days'} approved',
+                '$approvedDays approved ${approvedDays == 1 ? 'day' : 'days'}',
               ),
-              const TextSpan(text: ', and leaves over '),
+              const TextSpan(text: ' and leaves over '),
               EditorialSummaryHeader.highlightSpan('3 working days'),
-              const TextSpan(text: ' route through Manager + HR.'),
+              const TextSpan(text: ' route to HR.'),
             ],
             metrics: [
               EditorialMetric(
-                icon: Icons.folder_open_rounded,
-                label: '${allItems.length} total requests',
+                icon: LucideIcons.folder,
+                label: '${allItems.length} requests',
               ),
               EditorialMetric(
-                icon: Icons.schedule_rounded,
-                label: '$pendingCount awaiting review',
+                icon: LucideIcons.clock,
+                label: '$pendingCount pending',
               ),
               EditorialMetric(
-                icon: Icons.trending_up_rounded,
-                label: '$proofCount proof files uploaded',
+                icon: LucideIcons.trendingUp,
+                label: '+$proofCount proof ${proofCount == 1 ? 'file' : 'files'}',
                 accentColor: AppTheme.sageGreen,
               ),
             ],
           ),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+              decoration: const BoxDecoration(
+                color: AppTheme.alabasterCanvas,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(32),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Center(
                     child: Container(
-                      width: 40,
+                      width: 42,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                        color: const Color(0xFFC8C3B7),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                   ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
-                    child: Row(
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 16, 22, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _FilterChipItem(
-                          label: 'All',
-                          selected: activeFilter == LeaveListFilter.all,
-                          onSelected: () => ref
-                              .read(myRequestsFilterProvider.notifier)
-                              .select(LeaveListFilter.all),
+                        const Text(
+                          'Recent requests',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.inkDark,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        _FilterChipItem(
-                          label: 'Pending',
-                          selected: activeFilter == LeaveListFilter.pending,
-                          onSelected: () => ref
-                              .read(myRequestsFilterProvider.notifier)
-                              .select(LeaveListFilter.pending),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChipItem(
-                          label: 'Approved',
-                          selected: activeFilter == LeaveListFilter.approved,
-                          onSelected: () => ref
-                              .read(myRequestsFilterProvider.notifier)
-                              .select(LeaveListFilter.approved),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChipItem(
-                          label: 'Rejected',
-                          selected: activeFilter == LeaveListFilter.rejected,
-                          onSelected: () => ref
-                              .read(myRequestsFilterProvider.notifier)
-                              .select(LeaveListFilter.rejected),
+                        const SizedBox(height: 10),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _FilterPill(
+                                label: 'All',
+                                selected: activeFilter == LeaveListFilter.all,
+                                onTap: () => ref
+                                    .read(myRequestsFilterProvider.notifier)
+                                    .select(LeaveListFilter.all),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterPill(
+                                label: 'Pending',
+                                selected:
+                                    activeFilter == LeaveListFilter.pending,
+                                onTap: () => ref
+                                    .read(myRequestsFilterProvider.notifier)
+                                    .select(LeaveListFilter.pending),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterPill(
+                                label: 'Approved',
+                                selected:
+                                    activeFilter == LeaveListFilter.approved,
+                                onTap: () => ref
+                                    .read(myRequestsFilterProvider.notifier)
+                                    .select(LeaveListFilter.approved),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterPill(
+                                label: 'Rejected',
+                                selected:
+                                    activeFilter == LeaveListFilter.rejected,
+                                onTap: () => ref
+                                    .read(myRequestsFilterProvider.notifier)
+                                    .select(LeaveListFilter.rejected),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -179,7 +198,7 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                         );
                         if (filtered.isEmpty) {
                           return EmptyState(
-                            icon: Icons.event_note_outlined,
+                            icon: LucideIcons.calendarDays,
                             title: 'No leave requests found',
                             subtitle: activeFilter == LeaveListFilter.all
                                 ? 'You have not submitted any leave requests yet.'
@@ -200,12 +219,17 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(
-                                width: 420,
+                                width: 430,
                                 child: RefreshIndicator(
                                   onRefresh: () =>
                                       ref.refresh(myRequestsProvider.future),
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.all(20),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      22,
+                                      10,
+                                      22,
+                                      32,
+                                    ),
                                     itemCount: filtered.length,
                                     separatorBuilder: (_, _) =>
                                         const SizedBox(height: 12),
@@ -225,7 +249,6 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                                   ),
                                 ),
                               ),
-                              const VerticalDivider(width: 1),
                               Expanded(
                                 child: RequestDetailScreen(
                                   key: ValueKey(effectiveSelectedId),
@@ -242,13 +265,18 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                             onRefresh: () =>
                                 ref.refresh(myRequestsProvider.future),
                             child: GridView.builder(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.fromLTRB(
+                                22,
+                                10,
+                                22,
+                                110,
+                              ),
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
                                     mainAxisSpacing: 12,
                                     crossAxisSpacing: 12,
-                                    mainAxisExtent: 190,
+                                    mainAxisExtent: 186,
                                   ),
                               itemCount: filtered.length,
                               itemBuilder: (context, index) {
@@ -268,7 +296,12 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                           onRefresh: () =>
                               ref.refresh(myRequestsProvider.future),
                           child: ListView.separated(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.fromLTRB(
+                              22,
+                              10,
+                              22,
+                              110,
+                            ),
                             itemCount: filtered.length,
                             separatorBuilder: (_, _) =>
                                 const SizedBox(height: 12),
@@ -296,23 +329,37 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
   }
 }
 
-class _FilterChipItem extends StatelessWidget {
+class _FilterPill extends StatelessWidget {
   final String label;
   final bool selected;
-  final VoidCallback onSelected;
+  final VoidCallback onTap;
 
-  const _FilterChipItem({
+  const _FilterPill({
     required this.label,
     required this.selected,
-    required this.onSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.terracotta : AppTheme.ivoryCard,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppTheme.inkDark,
+          ),
+        ),
+      ),
     );
   }
 }

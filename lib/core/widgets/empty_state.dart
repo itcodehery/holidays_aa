@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// Reusable empty state placeholder with an optional call-to-action button.
+/// Reusable empty state placeholder with a Lucide icon and optional CTA button.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -29,19 +30,19 @@ class EmptyState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: scheme.primaryContainer.withValues(alpha: 0.4),
-                  shape: BoxShape.circle,
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(icon, size: 40, color: scheme.primary),
+                child: Icon(icon, size: 34, color: scheme.primary),
               ),
               const SizedBox(height: 16),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
@@ -56,7 +57,7 @@ class EmptyState extends StatelessWidget {
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: onAction,
-                  icon: const Icon(Icons.add_rounded),
+                  icon: const Icon(LucideIcons.plus, size: 18),
                   label: Text(actionLabel!),
                 ),
               ],

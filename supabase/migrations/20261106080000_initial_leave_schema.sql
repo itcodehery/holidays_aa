@@ -132,11 +132,13 @@ alter table public.leave_attachments enable row level security;
 
 -- Profiles: authenticated users can read profiles to resolve names/hierarchy,
 -- and update only their own profile name.
+drop policy if exists "profiles_select_authenticated" on public.profiles;
 create policy "profiles_select_authenticated"
   on public.profiles for select
   to authenticated
   using (true);
 
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
   on public.profiles for update
   to authenticated
@@ -145,12 +147,14 @@ create policy "profiles_update_own"
 
 -- Leave Requests:
 -- 1. Employees select their own requests
+drop policy if exists "leave_requests_select_own" on public.leave_requests;
 create policy "leave_requests_select_own"
   on public.leave_requests for select
   to authenticated
   using ((select auth.uid()) = employee_id);
 
 -- 2. Managers select requests belonging to their direct reports
+drop policy if exists "leave_requests_select_manager" on public.leave_requests;
 create policy "leave_requests_select_manager"
   on public.leave_requests for select
   to authenticated
@@ -163,6 +167,7 @@ create policy "leave_requests_select_manager"
   );
 
 -- 3. HR selects all requests (pending_hr + full organization history)
+drop policy if exists "leave_requests_select_hr" on public.leave_requests;
 create policy "leave_requests_select_hr"
   on public.leave_requests for select
   to authenticated
@@ -175,6 +180,7 @@ create policy "leave_requests_select_hr"
   );
 
 -- 4. Employees insert only their own requests (prefer RPC `submit_leave`)
+drop policy if exists "leave_requests_insert_own" on public.leave_requests;
 create policy "leave_requests_insert_own"
   on public.leave_requests for insert
   to authenticated
@@ -184,6 +190,7 @@ create policy "leave_requests_insert_own"
 -- All state transitions must go through `decide_leave` and `cancel_leave` RPCs.
 
 -- Leave Approvals: readable by anyone who can read the parent leave_request
+drop policy if exists "leave_approvals_select_visible" on public.leave_approvals;
 create policy "leave_approvals_select_visible"
   on public.leave_approvals for select
   to authenticated
@@ -196,6 +203,7 @@ create policy "leave_approvals_select_visible"
 
 -- Leave Attachments: readable by anyone who can read the parent leave_request,
 -- immutable after insertion (no UPDATE or DELETE policy).
+drop policy if exists "leave_attachments_select_visible" on public.leave_attachments;
 create policy "leave_attachments_select_visible"
   on public.leave_attachments for select
   to authenticated
@@ -206,6 +214,7 @@ create policy "leave_attachments_select_visible"
     )
   );
 
+drop policy if exists "leave_attachments_insert_owner" on public.leave_attachments;
 create policy "leave_attachments_insert_owner"
   on public.leave_attachments for insert
   to authenticated

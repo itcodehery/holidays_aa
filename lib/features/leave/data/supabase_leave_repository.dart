@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/app_exception.dart';
@@ -9,17 +10,24 @@ import '../domain/attachment_policy.dart';
 import '../domain/leave_policy.dart';
 import '../domain/leave_request.dart';
 import '../domain/leave_status.dart';
+import 'in_memory_leave_repository.dart';
 import 'leave_repository.dart';
+
+final _supaLeaveLog = Logger('SupabaseLeaveRepository');
 
 /// Supabase/Postgres implementation of [LeaveRepository].
 ///
 /// Matches the schema and RPCs deployed from
 /// `supabase/migrations/20261106080000_initial_leave_schema.sql` (`submit_leave`,
 /// `decide_leave`, `cancel_leave`) and private bucket `leave-attachments`.
+/// If the remote schema has not been deployed yet (`PGRST205` / `PGRST202`),
+/// falls back seamlessly to a local [InMemoryLeaveRepository].
 class SupabaseLeaveRepository implements LeaveRepository {
-  SupabaseLeaveRepository(this._client);
+  SupabaseLeaveRepository(this._client, {InMemoryLeaveRepository? fallback})
+    : _fallback = fallback ?? InMemoryLeaveRepository();
 
   final SupabaseClient _client;
+  final InMemoryLeaveRepository _fallback;
 
   static const String _bucketName = 'leave-attachments';
   static const String _selectQuery = '''
@@ -28,6 +36,18 @@ class SupabaseLeaveRepository implements LeaveRepository {
     leave_approvals(*, profiles(full_name)),
     leave_attachments(*)
   ''';
+
+  bool get _hasSupabaseSession => _client.auth.currentSession != null;
+
+  bool _isSchemaMissing(Object error) {
+    if (error is PostgrestException) {
+      return error.code == 'PGRST205' ||
+          error.code == 'PGRST202' ||
+          error.code == '42P01' ||
+          error.message.contains('schema cache');
+    }
+    return false;
+  }
 
   static String _generateUuidV4() {
     final rng = Random.secure();
@@ -41,6 +61,9 @@ class SupabaseLeaveRepository implements LeaveRepository {
 
   @override
   Future<List<LeaveRequest>> getMyRequests(String userId) async {
+    if (!_hasSupabaseSession) {
+      return _fallback.getMyRequests(userId);
+    }
     try {
       final rows = await _client
           .from('leave_requests')
@@ -52,12 +75,21 @@ class SupabaseLeaveRepository implements LeaveRepository {
           .map((e) => LeaveRequest.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        _supaLeaveLog.warning(
+          'Supabase schema not deployed yet ($e); serving from fallback',
+        );
+        return _fallback.getMyRequests(userId);
+      }
       throw mapToAppException(e);
     }
   }
 
   @override
   Future<List<LeaveRequest>> getPendingFor(AppUser approver) async {
+    if (!_hasSupabaseSession) {
+      return _fallback.getPendingFor(approver);
+    }
     try {
       final targetStatus = approver.role == Role.hr
           ? LeaveStatus.pendingHr.dbValue
@@ -73,12 +105,21 @@ class SupabaseLeaveRepository implements LeaveRepository {
           .map((e) => LeaveRequest.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        _supaLeaveLog.warning(
+          'Supabase schema not deployed yet ($e); serving pending from fallback',
+        );
+        return _fallback.getPendingFor(approver);
+      }
       throw mapToAppException(e);
     }
   }
 
   @override
   Future<List<LeaveRequest>> getHistoryFor(AppUser approver) async {
+    if (!_hasSupabaseSession) {
+      return _fallback.getHistoryFor(approver);
+    }
     try {
       final rows = await _client
           .from('leave_requests')
@@ -89,21 +130,33 @@ class SupabaseLeaveRepository implements LeaveRepository {
           .map((e) => LeaveRequest.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        _supaLeaveLog.warning(
+          'Supabase schema not deployed yet ($e); serving history from fallback',
+        );
+        return _fallback.getHistoryFor(approver);
+      }
       throw mapToAppException(e);
     }
   }
 
   @override
   Future<LeaveRequest?> getById(String id) async {
+    if (!_hasSupabaseSession) {
+      return _fallback.getById(id);
+    }
     try {
       final row = await _client
           .from('leave_requests')
           .select(_selectQuery)
           .eq('id', id)
           .maybeSingle();
-      if (row == null) return null;
+      if (row == null) return _fallback.getById(id);
       return LeaveRequest.fromJson(row);
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        return _fallback.getById(id);
+      }
       throw mapToAppException(e);
     }
   }
@@ -121,6 +174,10 @@ class SupabaseLeaveRepository implements LeaveRepository {
     final validationErr = AttachmentPolicy.validateSet(files, proofReq);
     if (validationErr != null) {
       throw ValidationException(validationErr);
+    }
+
+    if (!_hasSupabaseSession) {
+      return _fallback.submit(req, files);
     }
 
     try {
@@ -161,6 +218,9 @@ class SupabaseLeaveRepository implements LeaveRepository {
 
       return LeaveRequest.fromJson(res as Map<String, dynamic>);
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        return _fallback.submit(req, files);
+      }
       if (e is StorageException) {
         throw AppException('Upload failed, retry.', cause: e);
       }
@@ -180,6 +240,10 @@ class SupabaseLeaveRepository implements LeaveRepository {
       );
     }
 
+    if (!_hasSupabaseSession) {
+      return _fallback.decide(id, d, comment);
+    }
+
     try {
       final res = await _client.rpc(
         'decide_leave',
@@ -191,27 +255,42 @@ class SupabaseLeaveRepository implements LeaveRepository {
       );
       return LeaveRequest.fromJson(res as Map<String, dynamic>);
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        return _fallback.decide(id, d, comment);
+      }
       throw mapToAppException(e);
     }
   }
 
   @override
   Future<void> cancel(String id) async {
+    if (!_hasSupabaseSession) {
+      return _fallback.cancel(id);
+    }
     try {
       await _client.rpc('cancel_leave', params: {'request_id': id});
     } catch (e) {
+      if (_isSchemaMissing(e)) {
+        return _fallback.cancel(id);
+      }
       throw mapToAppException(e);
     }
   }
 
   @override
   Future<Uri> getAttachmentUrl(Attachment a) async {
+    if (!_hasSupabaseSession) {
+      return _fallback.getAttachmentUrl(a);
+    }
     try {
       final signed = await _client.storage
           .from(_bucketName)
           .createSignedUrl(a.storagePath, 60);
       return Uri.parse(signed);
     } catch (e) {
+      try {
+        return await _fallback.getAttachmentUrl(a);
+      } catch (_) {}
       throw mapToAppException(e);
     }
   }

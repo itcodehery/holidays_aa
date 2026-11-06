@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../features/leave/domain/leave_status.dart';
 
@@ -18,38 +19,51 @@ class StatusStyle {
   });
 }
 
-/// Application Material 3 design system inspired by warm editorial minimalism:
-/// - Deep obsidian header surfaces (`#16171B`)
-/// - Warm alabaster/sand sheet canvas (`#EFECE4`) & crisp ivory cards (`#FAF8F3`)
-/// - Burnt terracotta primary accent (`#D95D39`) & sage emerald (`#2E9E5B`)
-/// - Centralized accessible status colors (amber, blue, green, red, grey)
+/// Two-tone editorial design system for **Holiday**:
+/// - Default body/UI font: **Plus Jakarta Sans**
+/// - Brand wordmark font: **DM Serif Display**
+/// - Top header zone: Deep Obsidian (`#18191D`)
+/// - Lower sheet zone: Warm Alabaster/Stone (`#EAE6DD`)
+/// - Cards & controls: Borderless Warm Ivory (`#F7F5F0`) with squircle icon
+///   containers (`#F5DDD4` terracotta blush & `#E1DDD3` warm taupe)
+/// - Accent: Burnt Terracotta (`#D95D39`) and Sage Green (`#2E9E5B`)
 class AppTheme {
   const AppTheme._();
 
-  // Core design system tokens
-  static const String brandFontFamily = 'DM Serif Display';
-  static const Color obsidian = Color(0xFF16171B);
-  static const Color obsidianElevated = Color(0xFF202228);
-  static const Color terracotta = Color(0xFFD95D39);
-  static const Color terracottaSoft = Color(0xFFF9E5DE);
-  static const Color alabasterCanvas = Color(0xFFEFECE4);
-  static const Color ivoryCard = Color(0xFFFAF8F3);
-  static const Color warmTaupe = Color(0xFFE6E2D8);
-  static const Color sandBorder = Color(0xFFE2DDD2);
-  static const Color sageGreen = Color(0xFF2E9E5B);
+  static const String bodyFontFamily = 'Plus Jakarta Sans';
+  static const String brandFontFamily = 'BBH Sans Bogle';
 
-  /// Typography style for the "Holiday" brand name using Google Fonts' DM Serif Display.
+  // Two-tone palette tokens
+  static const Color obsidian = Color(0xFF18191D);
+  static const Color obsidianElevated = Color(0xFF23252B);
+  static const Color obsidianPill = Color(0xFF141519);
+  static const Color obsidianPillActive = Color(0xFF2A2C34);
+  static const Color obsidianPillRim = Color(0xFF2C2E37);
+
+  static const Color terracotta = Color(0xFFD95D39);
+  static const Color terracottaHighlight = Color(0xFFE26B47);
+  static const Color terracottaSoft = Color(0xFFF4DDD4);
+
+  static const Color alabasterCanvas = Color(0xFFEAE6DD);
+  static const Color ivoryCard = Color(0xFFF7F5F0);
+  static const Color warmTaupe = Color(0xFFE0DCD2);
+  static const Color sandBorder = Color(0xFFDDD8CC);
+  static const Color sageGreen = Color(0xFF32A862);
+  static const Color inkDark = Color(0xFF18181A);
+  static const Color inkMuted = Color(0xFF6B675E);
+
+  /// Typography style for the all-caps "HOLIDAY" brand name using BBH Bogle.
   static TextStyle brandTitleStyle({
     double fontSize = 26,
     Color? color,
-    double letterSpacing = 0.2,
+    double letterSpacing = 1.0,
   }) {
     return TextStyle(
       fontFamily: brandFontFamily,
       fontSize: fontSize,
       fontWeight: FontWeight.w400,
       letterSpacing: letterSpacing,
-      color: color,
+      color: color ?? const Color(0xFFF5F2EB),
     );
   }
 
@@ -66,156 +80,181 @@ class AppTheme {
       secondary: const Color(0xFF524E46),
       onSecondary: Colors.white,
       secondaryContainer: warmTaupe,
-      onSecondaryContainer: const Color(0xFF262420),
+      onSecondaryContainer: inkDark,
       tertiary: const Color(0xFF1E40AF),
       tertiaryContainer: const Color(0xFFDBEAFE),
       onTertiaryContainer: const Color(0xFF1E3A8A),
       surface: ivoryCard,
-      onSurface: const Color(0xFF19191B),
-      onSurfaceVariant: const Color(0xFF656159),
-      surfaceContainerLowest: Colors.white,
+      onSurface: inkDark,
+      onSurfaceVariant: inkMuted,
+      surfaceContainerLowest: ivoryCard,
       surfaceContainerLow: ivoryCard,
       surfaceContainer: alabasterCanvas,
       surfaceContainerHighest: warmTaupe,
-      outline: const Color(0xFF969084),
+      outline: const Color(0xFF9E988C),
       outlineVariant: sandBorder,
     );
     return _buildTheme(scheme, scaffoldBg: alabasterCanvas);
   }
 
-  static ThemeData get dark {
-    final baseScheme = ColorScheme.fromSeed(
-      seedColor: terracotta,
-      brightness: Brightness.dark,
-    );
-    final scheme = baseScheme.copyWith(
-      primary: const Color(0xFFE67350),
-      onPrimary: const Color(0xFF2B0B02),
-      primaryContainer: const Color(0xFF5C2210),
-      onPrimaryContainer: const Color(0xFFFFDBD0),
-      secondaryContainer: const Color(0xFF2A2B32),
-      onSecondaryContainer: const Color(0xFFE8E4DC),
-      surface: obsidianElevated,
-      onSurface: const Color(0xFFF4F1EA),
-      onSurfaceVariant: const Color(0xFFA6A29A),
-      surfaceContainerLowest: obsidian,
-      surfaceContainerHighest: const Color(0xFF2C2E36),
-      outlineVariant: const Color(0xFF32343D),
-    );
-    return _buildTheme(scheme, scaffoldBg: obsidian);
-  }
+  static ThemeData get dark => light;
 
   static ThemeData _buildTheme(
     ColorScheme scheme, {
     required Color scaffoldBg,
   }) {
+    final baseText = Typography.material2021().black.apply(
+      fontFamily: bodyFontFamily,
+      bodyColor: scheme.onSurface,
+      displayColor: scheme.onSurface,
+    );
+
     return ThemeData(
       useMaterial3: true,
+      fontFamily: bodyFontFamily,
+      textTheme: baseText,
       colorScheme: scheme,
       scaffoldBackgroundColor: scaffoldBg,
-      appBarTheme: AppBarTheme(
+      dividerTheme: const DividerThemeData(
+        color: Colors.transparent,
+        thickness: 0,
+        space: 0,
+      ),
+      appBarTheme: const AppBarTheme(
         centerTitle: false,
         backgroundColor: obsidian,
-        foregroundColor: const Color(0xFFF4F1EA),
+        foregroundColor: Color(0xFFF5F2EB),
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: scheme.surface,
+        color: ivoryCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: scheme.outlineVariant),
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide.none,
         ),
         margin: EdgeInsets.zero,
       ),
       chipTheme: ChipThemeData(
+        backgroundColor: ivoryCard,
+        selectedColor: terracottaSoft,
+        side: BorderSide.none,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(999),
+          side: BorderSide.none,
+        ),
+        labelStyle: const TextStyle(
+          fontFamily: bodyFontFamily,
+          fontWeight: FontWeight.w600,
+          color: inkDark,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          elevation: 0,
           backgroundColor: scheme.primary,
           foregroundColor: scheme.onPrimary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: bodyFontFamily,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: ivoryCard,
+          foregroundColor: inkDark,
+          side: BorderSide.none,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: bodyFontFamily,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerLowest,
+        fillColor: ivoryCard,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: scheme.outlineVariant),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: scheme.outlineVariant),
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: 18,
+          vertical: 16,
         ),
       ),
     );
   }
 
-  /// Centralized status styling:
-  /// - Amber: `pendingManager`
-  /// - Blue: `pendingHr`
-  /// - Green: `approved`
-  /// - Red: `rejected`
-  /// - Grey: `cancelled`
+  /// Centralized status styling with Lucide icons:
+  /// - Terracotta/Amber: `pendingManager`
+  /// - Soft Blue: `pendingHr`
+  /// - Soft Sage Green: `approved`
+  /// - Soft Coral Red: `rejected`
+  /// - Warm Taupe Grey: `cancelled`
   static StatusStyle statusStyle(
     LeaveStatus status, {
     Brightness brightness = Brightness.light,
   }) {
-    final isDark = brightness == Brightness.dark;
     switch (status) {
       case LeaveStatus.pendingManager:
-        return StatusStyle(
-          foreground: isDark ? const Color(0xFFFCD34D) : const Color(0xFF9A3412),
-          background: isDark ? const Color(0xFF451A03) : const Color(0xFFFFEDD5),
-          border: isDark ? const Color(0xFFB45309) : const Color(0xFFF59E0B),
-          icon: Icons.hourglass_top_rounded,
+        return const StatusStyle(
+          foreground: Color(0xFFB84724),
+          background: Color(0xFFF5DDD4),
+          border: Colors.transparent,
+          icon: LucideIcons.hourglass,
         );
       case LeaveStatus.pendingHr:
-        return StatusStyle(
-          foreground: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E40AF),
-          background: isDark ? const Color(0xFF172554) : const Color(0xFFDBEAFE),
-          border: isDark ? const Color(0xFF2563EB) : const Color(0xFF3B82F6),
-          icon: Icons.policy_outlined,
+        return const StatusStyle(
+          foreground: Color(0xFF1D4ED8),
+          background: Color(0xFFDCE8FD),
+          border: Colors.transparent,
+          icon: LucideIcons.shieldCheck,
         );
       case LeaveStatus.approved:
-        return StatusStyle(
-          foreground: isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
-          background: isDark ? const Color(0xFF052E16) : const Color(0xFFDCFCE7),
-          border: isDark ? const Color(0xFF16A34A) : const Color(0xFF22C55E),
-          icon: Icons.check_circle_outline_rounded,
+        return const StatusStyle(
+          foreground: Color(0xFF18794E),
+          background: Color(0xFFD9F0E3),
+          border: Colors.transparent,
+          icon: LucideIcons.circleCheck,
         );
       case LeaveStatus.rejected:
-        return StatusStyle(
-          foreground: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
-          background: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
-          border: isDark ? const Color(0xFFDC2626) : const Color(0xFFEF4444),
-          icon: Icons.cancel_outlined,
+        return const StatusStyle(
+          foreground: Color(0xFFB42318),
+          background: Color(0xFFFADCD9),
+          border: Colors.transparent,
+          icon: LucideIcons.circleX,
         );
       case LeaveStatus.cancelled:
-        return StatusStyle(
-          foreground: isDark ? const Color(0xFFD1D5DB) : const Color(0xFF4B5563),
-          background: isDark ? const Color(0xFF1F2937) : const Color(0xFFE6E2D8),
-          border: isDark ? const Color(0xFF4B5563) : const Color(0xFF9CA3AF),
-          icon: Icons.remove_circle_outline_rounded,
+        return const StatusStyle(
+          foreground: Color(0xFF57534E),
+          background: Color(0xFFE2DFD7),
+          border: Colors.transparent,
+          icon: LucideIcons.circleMinus,
         );
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// User-friendly error state widget with a retry button.
+/// User-friendly error state widget with a Lucide retry button.
 class ErrorView extends StatelessWidget {
   final Object error;
   final VoidCallback onRetry;
@@ -23,15 +24,15 @@ class ErrorView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.error_outline_rounded,
-                size: 44,
+                LucideIcons.circleAlert,
+                size: 42,
                 color: scheme.error,
               ),
               const SizedBox(height: 12),
               Text(
                 'Unable to load data',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
@@ -45,7 +46,7 @@ class ErrorView extends StatelessWidget {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: const Icon(LucideIcons.refreshCw, size: 16),
                 label: const Text('Retry'),
               ),
             ],

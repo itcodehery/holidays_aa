@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../domain/leave_policy.dart';
 
-/// Interactive start/end date range selector with a live "Working days: N"
-/// counter and a multi-stage approval info banner when N > 3.
+/// Borderless interactive start/end date range selector with a live
+/// "Working days: N" counter and a multi-stage approval info banner when N > 3.
 class DateRangeField extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;
@@ -59,13 +61,13 @@ class DateRangeField extends StatelessWidget {
       children: [
         InkWell(
           key: const Key('date_range_picker_button'),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           onTap: () => _pickDateRange(context),
           child: InputDecorator(
             decoration: InputDecoration(
               labelText: 'Leave Dates (Start – End)',
               errorText: errorText,
-              prefixIcon: const Icon(Icons.date_range_rounded),
+              prefixIcon: const Icon(LucideIcons.calendarRange, size: 19),
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -74,23 +76,23 @@ class DateRangeField extends StatelessWidget {
                       margin: const EdgeInsets.only(right: 12),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
-                        vertical: 4,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: scheme.primaryContainer,
+                        color: AppTheme.terracottaSoft,
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         'Working days: $days',
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
-                              color: scheme.onPrimaryContainer,
+                              color: AppTheme.terracotta,
                               fontWeight: FontWeight.w700,
                             ),
                       ),
                     ),
-                  const Icon(Icons.edit_calendar_outlined),
-                  const SizedBox(width: 12),
+                  const Icon(LucideIcons.calendarDays, size: 18),
+                  const SizedBox(width: 14),
                 ],
               ),
             ),
@@ -100,6 +102,7 @@ class DateRangeField extends StatelessWidget {
                   : 'Tap to choose start and end dates',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: hasRange ? scheme.onSurface : scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -107,20 +110,20 @@ class DateRangeField extends StatelessWidget {
         if (hasRange && days == 0) ...[
           const SizedBox(height: 8),
           _InfoBanner(
-            icon: Icons.warning_amber_rounded,
+            icon: LucideIcons.triangleAlert,
             color: scheme.error,
-            backgroundColor: scheme.errorContainer.withValues(alpha: 0.4),
+            backgroundColor: const Color(0xFFFADCD9),
             message:
                 'Selected dates fall on a weekend/holiday (0 working days). Please pick working days (Mon–Fri).',
           ),
         ],
         if (needsTwoStage) ...[
           const SizedBox(height: 10),
-          _InfoBanner(
-            key: const Key('two_stage_approval_banner'),
-            icon: Icons.info_outline_rounded,
-            color: const Color(0xFF1E40AF),
-            backgroundColor: const Color(0xFFDBEAFE),
+          const _InfoBanner(
+            key: Key('two_stage_approval_banner'),
+            icon: LucideIcons.info,
+            color: Color(0xFFB84724),
+            backgroundColor: AppTheme.terracottaSoft,
             message:
                 'This request needs approval from your manager and HR (> 3 consecutive working days).',
           ),
@@ -148,15 +151,14 @@ class _InfoBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(icon, color: color, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

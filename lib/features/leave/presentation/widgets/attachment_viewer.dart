@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/attachment.dart';
 import '../leave_providers.dart';
 
-/// Modal previewer for uploaded attachments.
-/// - Images open in an in-app preview using the signed URL or in-memory bytes.
-/// - PDFs open via `url_launcher` (with an in-app fallback dialog when running
-///   with in-memory demo bytes).
+/// Modal previewer for uploaded attachments using Lucide icons.
 class AttachmentViewer extends ConsumerWidget {
   final Attachment attachment;
 
@@ -28,12 +27,12 @@ class AttachmentViewer extends ConsumerWidget {
         .getAttachmentBytes(attachment.storagePath);
 
     return AlertDialog(
+      backgroundColor: AppTheme.ivoryCard,
       title: Row(
         children: [
           Icon(
-            attachment.isPdf
-                ? Icons.picture_as_pdf_rounded
-                : Icons.image_rounded,
+            attachment.isPdf ? LucideIcons.fileText : LucideIcons.image,
+            size: 20,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -71,10 +70,8 @@ class AttachmentViewer extends ConsumerWidget {
                   ),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppTheme.alabasterCanvas,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(
                       child: Column(
@@ -86,7 +83,7 @@ class AttachmentViewer extends ConsumerWidget {
                             height: 96,
                             fit: BoxFit.contain,
                             errorBuilder: (_, _, _) =>
-                                const Icon(Icons.broken_image, size: 48),
+                                const Icon(LucideIcons.image, size: 48),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -105,7 +102,6 @@ class AttachmentViewer extends ConsumerWidget {
               );
             }
 
-            // PDF / Document preview
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +128,7 @@ class AttachmentViewer extends ConsumerWidget {
                       );
                     }
                   },
-                  icon: const Icon(Icons.open_in_new_rounded),
+                  icon: const Icon(LucideIcons.externalLink, size: 16),
                   label: const Text('Open PDF via URL Launcher'),
                 ),
               ],
