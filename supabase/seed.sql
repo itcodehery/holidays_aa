@@ -1,0 +1,4 @@
+-- Optional seed file for local Supabase development and preview branches.
+-- Demo accounts can be signed up via Supabase Auth (`alex@company.com`,
+-- `manager@company.com`, `hr@company.com`) or tested directly with the
+-- in-memory repository when running without Supabase credentials.
