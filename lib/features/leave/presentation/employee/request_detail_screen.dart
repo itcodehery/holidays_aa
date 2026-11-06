@@ -51,7 +51,7 @@ class RequestDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppTheme.obsidian,
         title: Text(
-          'Holiday',
+          'INTERLUDE',
           style: AppTheme.brandTitleStyle(fontSize: 24),
         ),
       ),

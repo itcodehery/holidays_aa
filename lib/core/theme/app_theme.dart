@@ -19,9 +19,9 @@ class StatusStyle {
   });
 }
 
-/// Two-tone editorial design system for **Holiday**:
+/// Two-tone editorial design system for **Interlude**:
 /// - Default body/UI font: **Plus Jakarta Sans**
-/// - Brand wordmark font: **DM Serif Display**
+/// - Brand wordmark font: **BBH Sans Bogle** (`INTERLUDE`, `letterSpacing: -0.5`)
 /// - Top header zone: Deep Obsidian (`#18191D`)
 /// - Lower sheet zone: Warm Alabaster/Stone (`#EAE6DD`)
 /// - Cards & controls: Borderless Warm Ivory (`#F7F5F0`) with squircle icon
@@ -52,11 +52,11 @@ class AppTheme {
   static const Color inkDark = Color(0xFF18181A);
   static const Color inkMuted = Color(0xFF6B675E);
 
-  /// Typography style for the all-caps "HOLIDAY" brand name using BBH Bogle.
+  /// Typography style for the all-caps "INTERLUDE" brand name using BBH Bogle.
   static TextStyle brandTitleStyle({
     double fontSize = 26,
     Color? color,
-    double letterSpacing = 1.0,
+    double letterSpacing = -0.5,
   }) {
     return TextStyle(
       fontFamily: brandFontFamily,

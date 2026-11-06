@@ -38,9 +38,11 @@ class ReviewSheet extends ConsumerStatefulWidget {
         isScrollControlled: true,
         useSafeArea: true,
         showDragHandle: true,
-        builder: (_) => Padding(
+        builder: (sheetContext) => AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
           padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: ReviewSheet(request: request),
         ),
@@ -48,8 +50,14 @@ class ReviewSheet extends ConsumerStatefulWidget {
     } else {
       await showDialog<void>(
         context: context,
-        builder: (_) => Dialog(
+        builder: (dialogContext) => Dialog(
           backgroundColor: AppTheme.ivoryCard,
+          insetPadding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + MediaQuery.viewInsetsOf(dialogContext).bottom,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
@@ -68,10 +76,39 @@ class ReviewSheet extends ConsumerStatefulWidget {
 
 class _ReviewSheetState extends ConsumerState<ReviewSheet> {
   final _commentController = TextEditingController();
+  final _scrollController = ScrollController();
+  final _commentFocusNode = FocusNode();
   String? _commentError;
 
   @override
+  void initState() {
+    super.initState();
+    _commentFocusNode.addListener(_onCommentFocusChanged);
+  }
+
+  void _onCommentFocusChanged() {
+    if (_commentFocusNode.hasFocus) {
+      _scrollToBottomSoon();
+    }
+  }
+
+  void _scrollToBottomSoon() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
   void dispose() {
+    _commentFocusNode
+      ..removeListener(_onCommentFocusChanged)
+      ..dispose();
+    _scrollController.dispose();
     _commentController.dispose();
     super.dispose();
   }
@@ -171,7 +208,14 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
         LeavePolicy.validateDecisionPermission(currentUser, liveRequest) ==
             null;
 
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    if (keyboardInset > 0 && _commentFocusNode.hasFocus) {
+      _scrollToBottomSoon();
+    }
+
     return SingleChildScrollView(
+      controller: _scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -311,14 +355,17 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
             TextField(
               key: const Key('review_comment_field'),
               controller: _commentController,
+              focusNode: _commentFocusNode,
               enabled: !isSubmitting,
               maxLines: 2,
+              scrollPadding: const EdgeInsets.only(bottom: 140),
               decoration: InputDecoration(
                 fillColor: AppTheme.alabasterCanvas,
                 labelText: 'Reviewer Comment (Required on Reject)',
                 hintText: 'Add a note for the employee or HR…',
                 errorText: _commentError,
               ),
+              onTap: _scrollToBottomSoon,
               onChanged: (_) {
                 if (_commentError != null) {
                   setState(() => _commentError = null);

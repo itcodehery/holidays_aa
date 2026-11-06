@@ -26,6 +26,11 @@ class DateRangeField extends StatelessWidget {
     return LeavePolicy.countWorkingDays(startDate!, endDate!);
   }
 
+  WorkingDayBreakdown? get breakdown {
+    if (startDate == null || endDate == null) return null;
+    return LeavePolicy.explainWorkingDays(startDate!, endDate!);
+  }
+
   Future<void> _pickDateRange(BuildContext context) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -41,7 +46,7 @@ class DateRangeField extends StatelessWidget {
         start: initialStart,
         end: initialEnd.isBefore(initialStart) ? initialStart : initialEnd,
       ),
-      helpText: 'Select Leave Start & End Dates',
+      helpText: 'Select Leave Start & End Dates (Weekends & Holidays Skipped)',
     );
 
     if (picked != null) {
@@ -54,7 +59,11 @@ class DateRangeField extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final hasRange = startDate != null && endDate != null;
     final days = workingDays;
+    final details = breakdown;
     final needsTwoStage = LeavePolicy.requiresSecondApproval(days);
+    final bridgeSuggestion = LeavePolicy.findBridgeDaySuggestion(
+      DateTime.now(),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,6 +116,33 @@ class DateRangeField extends StatelessWidget {
             ),
           ),
         ),
+        if (hasRange && details != null && days > 0) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.calendarCheck2,
+                  size: 14,
+                  color: AppTheme.inkMuted,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    details.explanationText,
+                    key: const Key('working_day_explanation_text'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.inkMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (hasRange && days == 0) ...[
           const SizedBox(height: 8),
           _InfoBanner(
@@ -126,6 +162,70 @@ class DateRangeField extends StatelessWidget {
             backgroundColor: AppTheme.terracottaSoft,
             message:
                 'This request needs approval from your manager and HR (> 3 consecutive working days).',
+          ),
+        ],
+        if (bridgeSuggestion != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: AppTheme.ivoryCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.sandBorder),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppTheme.terracottaSoft,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    LucideIcons.sparkles,
+                    size: 15,
+                    color: AppTheme.terracotta,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    bridgeSuggestion.message,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.inkDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    onRangeSelected(
+                      DateTimeRange(
+                        start: bridgeSuggestion.bridgeStartDate,
+                        end: bridgeSuggestion.bridgeEndDate,
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppTheme.terracottaSoft,
+                    foregroundColor: AppTheme.terracotta,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Use',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ],

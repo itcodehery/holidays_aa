@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../features/auth/presentation/account_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/leave/presentation/employee/apply_leave_screen.dart';
@@ -14,7 +15,7 @@ import '../widgets/adaptive_scaffold.dart';
 
 final _routerLog = Logger('Router');
 
-/// Intentional two-option employee navigation: "Home" and "Add a Leave Request".
+/// Employee bottom navigation destinations: "Home", "Add Leave", and "Account".
 const _employeeDestinations = <AdaptiveDestination>[
   AdaptiveDestination(
     label: 'Home',
@@ -23,14 +24,20 @@ const _employeeDestinations = <AdaptiveDestination>[
     route: '/employee/requests',
   ),
   AdaptiveDestination(
-    label: 'Add a Leave Request',
+    label: 'Add Leave',
     icon: LucideIcons.plus,
     selectedIcon: LucideIcons.plus,
     route: '/employee/apply',
   ),
+  AdaptiveDestination(
+    label: 'Account',
+    icon: LucideIcons.user,
+    selectedIcon: LucideIcons.user,
+    route: '/account',
+  ),
 ];
 
-/// Intentional two-option manager/HR navigation: "Home" and "History".
+/// Manager/HR bottom navigation destinations: "Home", "History", and "Account".
 const _approverDestinations = <AdaptiveDestination>[
   AdaptiveDestination(
     label: 'Home',
@@ -43,6 +50,12 @@ const _approverDestinations = <AdaptiveDestination>[
     icon: LucideIcons.layers,
     selectedIcon: LucideIcons.layers,
     route: '/approver/history',
+  ),
+  AdaptiveDestination(
+    label: 'Account',
+    icon: LucideIcons.user,
+    selectedIcon: LucideIcons.user,
+    route: '/account',
   ),
 ];
 
@@ -60,6 +73,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (user == null) {
         return isLoginRoute ? null : '/login';
+      }
+
+      // Common account page accessible to all three roles
+      if (path == '/account') {
+        return null;
       }
 
       if (user.isEmployee) {
@@ -81,6 +99,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/account',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            final user = ref.watch(currentUserProvider);
+            final destinations = (user != null && user.isEmployee)
+                ? _employeeDestinations
+                : _approverDestinations;
+            return AdaptiveScaffold(
+              title: 'Account',
+              destinations: destinations,
+              selectedIndex: 2,
+              onDestinationSelected: (idx) =>
+                  context.go(destinations[idx].route),
+              body: const AccountScreen(),
+            );
+          },
+        ),
       ),
       GoRoute(
         path: '/employee/requests',

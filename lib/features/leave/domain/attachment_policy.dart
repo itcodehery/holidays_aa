@@ -45,6 +45,38 @@ class AttachmentPolicy {
     }
   }
 
+  /// Contextual checklist of recommended proof items per [LeaveType].
+  static List<String> proofChecklist(LeaveType type) {
+    switch (type) {
+      case LeaveType.marriage:
+        return const [
+          'Wedding invitation card',
+          'Marriage registration receipt / certificate',
+        ];
+      case LeaveType.bereavement:
+        return const [
+          'Family bereavement notice or hospital slip',
+          'Travel ticket or obituary confirmation',
+        ];
+      case LeaveType.sick:
+        return const [
+          'Doctor\'s medical certificate (> 2 working days)',
+          'Prescription or lab / discharge summary',
+        ];
+      case LeaveType.maternityPaternity:
+        return const [
+          'Expected delivery / birth certificate',
+          'Hospital maternity / paternity confirmation note',
+        ];
+      case LeaveType.annual:
+      case LeaveType.casual:
+        return const [
+          'Optional: Crew / team handover checklist',
+          'Optional: Travel itinerary if out of station',
+        ];
+    }
+  }
+
   /// Returns `null` if [f] is valid, otherwise a user-facing error message.
   static String? validateFile(PickedAttachment f) {
     final parts = f.name.split('.');

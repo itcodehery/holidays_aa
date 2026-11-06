@@ -1,6 +1,6 @@
-# Holiday — Employee Leave Management System
+# Interlude — Employee Leave Management System
 
-A responsive Flutter application (**Holiday**, styled with Google Fonts' **DM Serif Display**) where employees submit leave requests (with supporting proof documents) and managers/HR approve or reject them with comments. Consecutive leave requests exceeding **3 working days** automatically follow a two-stage approval workflow (**Manager → HR/Admin**).
+A responsive Flutter application (**Interlude**, styled with Google Fonts' **BBH Sans Bogle** and **Plus Jakarta Sans**) where employees submit leave requests (with supporting proof documents) and managers/HR approve or reject them with comments. Consecutive leave requests exceeding **3 working days** automatically follow a two-stage approval workflow (**Manager → HR/Admin**).
 
 For the complete technical specification, database schema, and execution plan, refer to [architecture.md](./architecture.md).
 

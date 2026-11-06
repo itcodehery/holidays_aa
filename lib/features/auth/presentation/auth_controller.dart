@@ -36,15 +36,19 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 /// Exposes the currently authenticated [AppUser] (or `null` when logged out).
 final currentUserProvider = Provider<AppUser?>((ref) {
   final authState = ref.watch(authControllerProvider);
-  return authState.value ?? ref.read(authRepositoryProvider).currentUser;
+  if (authState.hasValue) {
+    return authState.value;
+  }
+  return ref.read(authRepositoryProvider).currentUser;
 });
 
-/// Simple [ChangeNotifier] bridging [authControllerProvider] changes to
+/// Simple [ChangeNotifier] bridging [currentUserProvider] changes to
 /// `go_router`'s `refreshListenable`.
 class AuthRouterNotifier extends ChangeNotifier {
   AuthRouterNotifier(Ref ref) {
-    ref.listen<AsyncValue<AppUser?>>(authControllerProvider, (_, _) {
+    ref.listen<AppUser?>(currentUserProvider, (_, _) {
       notifyListeners();
+      scheduleMicrotask(notifyListeners);
     });
   }
 }
@@ -55,13 +59,13 @@ final authRouterNotifierProvider = Provider<AuthRouterNotifier>((ref) {
   return notifier;
 });
 
-/// Manages sign-in, quick demo persona switching, and sign-out.
+/// Manages email/password sign-in and sign-out.
 class AuthController extends AsyncNotifier<AppUser?> {
   static final _log = Logger('AuthController');
 
   @override
   FutureOr<AppUser?> build() {
-    return ref.read(authRepositoryProvider).currentUser;
+    return ref.watch(authRepositoryProvider).currentUser;
   }
 
   Future<bool> signIn(String email, String password) async {
@@ -81,26 +85,11 @@ class AuthController extends AsyncNotifier<AppUser?> {
     }
   }
 
-  Future<bool> signInAsDemo(Role role) async {
-    state = const AsyncLoading();
-    try {
-      final user = await ref.read(authRepositoryProvider).signInAsDemo(role);
-      _log.info('signInAsDemo ok (userId=${user.id}, role=${user.role.name})');
-      state = AsyncData(user);
-      return true;
-    } catch (e, s) {
-      final mapped = mapToAppException(e);
-      _log.warning('signInAsDemo failed (role=${role.name})');
-      state = AsyncError(mapped, s);
-      return false;
-    }
-  }
-
   Future<void> signOut() async {
     final prevId = state.value?.id;
     await ref.read(authRepositoryProvider).signOut();
-    _log.info('signOut ok (userId=$prevId)');
     state = const AsyncData(null);
+    _log.info('signOut ok (userId=$prevId)');
   }
 }
 

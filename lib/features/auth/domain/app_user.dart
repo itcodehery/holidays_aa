@@ -23,6 +23,7 @@ class AppUser {
   final String fullName;
   final Role role;
   final String? managerId;
+  final String? managerName;
 
   const AppUser({
     required this.id,
@@ -30,6 +31,7 @@ class AppUser {
     required this.fullName,
     required this.role,
     this.managerId,
+    this.managerName,
   });
 
   bool get isEmployee => role == Role.employee;
@@ -43,6 +45,7 @@ class AppUser {
     String? fullName,
     Role? role,
     String? managerId,
+    String? managerName,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -50,16 +53,22 @@ class AppUser {
       fullName: fullName ?? this.fullName,
       role: role ?? this.role,
       managerId: managerId ?? this.managerId,
+      managerName: managerName ?? this.managerName,
     );
   }
 
-  factory AppUser.fromJson(Map<String, dynamic> json, {String email = ''}) {
+  factory AppUser.fromJson(
+    Map<String, dynamic> json, {
+    String email = '',
+    String? managerName,
+  }) {
     return AppUser(
       id: json['id'] as String,
       email: (json['email'] as String?) ?? email,
       fullName: json['full_name'] as String,
       role: Role.fromString(json['role'] as String),
       managerId: json['manager_id'] as String?,
+      managerName: managerName ?? (json['manager_name'] as String?),
     );
   }
 
@@ -69,5 +78,6 @@ class AppUser {
         'full_name': fullName,
         'role': role.dbValue,
         'manager_id': managerId,
+        'manager_name': managerName,
       };
 }

@@ -178,4 +178,318 @@ class LeavePolicy {
     }
     return 'Request is not in a decidable state.';
   }
+
+  /// Standard annual leave allocation (in working days) per [LeaveType].
+  static int allocatedDaysFor(LeaveType type) {
+    switch (type) {
+      case LeaveType.annual:
+        return 18;
+      case LeaveType.casual:
+        return 8;
+      case LeaveType.sick:
+        return 10;
+      case LeaveType.marriage:
+        return 5;
+      case LeaveType.bereavement:
+        return 5;
+      case LeaveType.maternityPaternity:
+        return 15;
+    }
+  }
+
+  /// Computes a live [LeaveBalancePreview] for [leaveType] given the employee's
+  /// [existingRequests] and the currently selected [requestedWorkingDays].
+  static LeaveBalancePreview computeBalancePreview({
+    required LeaveType leaveType,
+    required List<LeaveRequest> existingRequests,
+    required int requestedWorkingDays,
+    int? year,
+  }) {
+    final targetYear = year ?? DateTime.now().year;
+    final allocated = allocatedDaysFor(leaveType);
+    var used = 0;
+    for (final req in existingRequests) {
+      if (req.leaveType != leaveType) continue;
+      if (req.status == LeaveStatus.rejected ||
+          req.status == LeaveStatus.cancelled) {
+        continue;
+      }
+      if (req.startDate.year == targetYear || req.endDate.year == targetYear) {
+        used += req.totalDays;
+      }
+    }
+    final remainingBefore = (allocated - used).clamp(0, allocated);
+    final remainingAfter = remainingBefore - requestedWorkingDays;
+    return LeaveBalancePreview(
+      leaveType: leaveType,
+      allocated: allocated,
+      used: used,
+      remainingBefore: remainingBefore,
+      requestedDays: requestedWorkingDays,
+      remainingAfter: remainingAfter,
+    );
+  }
+
+  /// Returns a detailed [WorkingDayBreakdown] between [start] and [end],
+  /// explaining how many weekend days and public holidays were skipped.
+  static WorkingDayBreakdown explainWorkingDays(
+    DateTime start,
+    DateTime end, {
+    Set<DateTime> holidays = const {},
+    List<PublicHoliday> namedHolidays = kDefaultPublicHolidays,
+  }) {
+    final s = _dateOnly(start);
+    final e = _dateOnly(end);
+    if (e.isBefore(s)) {
+      return const WorkingDayBreakdown(
+        workingDays: 0,
+        weekendDaysSkipped: 0,
+        holidaysSkipped: 0,
+        skippedHolidayNames: [],
+      );
+    }
+
+    final holidayNameByDate = <DateTime, String>{
+      for (final h in namedHolidays) _dateOnly(h.date): h.name,
+    };
+    final normalizedHolidays = <DateTime>{
+      ...holidays.map(_dateOnly),
+      ...holidayNameByDate.keys,
+    };
+
+    var working = 0;
+    var weekends = 0;
+    var holidaysCount = 0;
+    final skippedNames = <String>[];
+
+    var cursor = s;
+    while (!cursor.isAfter(e)) {
+      final isWeekend =
+          cursor.weekday == DateTime.saturday ||
+          cursor.weekday == DateTime.sunday;
+      if (isWeekend) {
+        weekends++;
+      } else if (normalizedHolidays.contains(cursor)) {
+        holidaysCount++;
+        final name = holidayNameByDate[cursor];
+        if (name != null && !skippedNames.contains(name)) {
+          skippedNames.add(name);
+        }
+      } else {
+        working++;
+      }
+      cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
+    }
+
+    return WorkingDayBreakdown(
+      workingDays: working,
+      weekendDaysSkipped: weekends,
+      holidaysSkipped: holidaysCount,
+      skippedHolidayNames: skippedNames,
+    );
+  }
+
+  /// Scans [holidays] starting from [fromDate] for an upcoming holiday that sits
+  /// adjacent to a weekend (Tuesday or Thursday, or Monday/Friday) and suggests
+  /// taking 1 bridge day off for a 4-day break.
+  static BridgeDaySuggestion? findBridgeDaySuggestion(
+    DateTime fromDate, {
+    List<PublicHoliday> holidays = kDefaultPublicHolidays,
+  }) {
+    final start = _dateOnly(fromDate);
+    for (final h in holidays) {
+      final d = _dateOnly(h.date);
+      if (d.isBefore(start)) continue;
+
+      // Thursday holiday -> take Friday off for a 4-day break (Thu-Sun)
+      if (d.weekday == DateTime.thursday) {
+        final bridge = DateTime(d.year, d.month, d.day + 1);
+        return BridgeDaySuggestion(
+          holiday: h,
+          bridgeStartDate: bridge,
+          bridgeEndDate: bridge,
+          totalDaysAway: 4,
+          leaveDaysRequired: 1,
+          message:
+              '${h.name} falls on a Thursday — take Friday off to get 4 days away for 1 day of leave.',
+        );
+      }
+      // Tuesday holiday -> take Monday off for a 4-day break (Sat-Tue)
+      if (d.weekday == DateTime.tuesday) {
+        final bridge = DateTime(d.year, d.month, d.day - 1);
+        if (!bridge.isBefore(start)) {
+          return BridgeDaySuggestion(
+            holiday: h,
+            bridgeStartDate: bridge,
+            bridgeEndDate: bridge,
+            totalDaysAway: 4,
+            leaveDaysRequired: 1,
+            message:
+                '${h.name} falls on a Tuesday — take Monday off to get 4 days away for 1 day of leave.',
+          );
+        }
+      }
+      // Friday holiday -> take Thursday off for a 4-day break (Thu-Sun)
+      if (d.weekday == DateTime.friday) {
+        final bridge = DateTime(d.year, d.month, d.day - 1);
+        if (!bridge.isBefore(start)) {
+          return BridgeDaySuggestion(
+            holiday: h,
+            bridgeStartDate: bridge,
+            bridgeEndDate: bridge,
+            totalDaysAway: 4,
+            leaveDaysRequired: 1,
+            message:
+                '${h.name} creates a long weekend — add Thursday to enjoy 4 days away for 1 day of leave.',
+          );
+        }
+      }
+      // Monday holiday -> take Tuesday off for a 4-day break (Sat-Tue)
+      if (d.weekday == DateTime.monday) {
+        final bridge = DateTime(d.year, d.month, d.day + 1);
+        return BridgeDaySuggestion(
+          holiday: h,
+          bridgeStartDate: bridge,
+          bridgeEndDate: bridge,
+          totalDaysAway: 4,
+          leaveDaysRequired: 1,
+          message:
+              '${h.name} is on a Monday — add Tuesday off for a 4-day break using 1 day of leave.',
+        );
+      }
+    }
+    return null;
+  }
+
+  /// Finds overlapping active (pending or approved) leave requests from other
+  /// teammates across `[target.startDate, target.endDate]`.
+  static List<LeaveRequest> findTeamConflicts(
+    LeaveRequest target,
+    List<LeaveRequest> teamRequests,
+  ) {
+    final s = _dateOnly(target.startDate);
+    final e = _dateOnly(target.endDate);
+    final conflicts = <LeaveRequest>[];
+    final seenIds = <String>{target.id};
+
+    for (final req in teamRequests) {
+      if (seenIds.contains(req.id)) continue;
+      if (req.employeeId == target.employeeId) continue;
+      if (req.status == LeaveStatus.rejected ||
+          req.status == LeaveStatus.cancelled) {
+        continue;
+      }
+      final reqStart = _dateOnly(req.startDate);
+      final reqEnd = _dateOnly(req.endDate);
+      if (!s.isAfter(reqEnd) && !e.isBefore(reqStart)) {
+        seenIds.add(req.id);
+        conflicts.add(req);
+      }
+    }
+    return conflicts;
+  }
 }
+
+/// Corporate / public holiday entry used by the smart date picker and
+/// bridge-day recommender.
+class PublicHoliday {
+  final DateTime date;
+  final String name;
+
+  const PublicHoliday({required this.date, required this.name});
+}
+
+/// Default Akasa Air / Indian corporate holiday calendar for 2026–2027.
+final List<PublicHoliday> kDefaultPublicHolidays = [
+  PublicHoliday(date: DateTime(2026, 1, 26), name: 'Republic Day'),
+  PublicHoliday(date: DateTime(2026, 3, 4), name: 'Holi'),
+  PublicHoliday(date: DateTime(2026, 5, 1), name: 'Maharashtra / Labour Day'),
+  PublicHoliday(date: DateTime(2026, 8, 15), name: 'Independence Day'),
+  PublicHoliday(date: DateTime(2026, 9, 14), name: 'Ganesh Chaturthi'),
+  PublicHoliday(date: DateTime(2026, 10, 2), name: 'Gandhi Jayanti'),
+  PublicHoliday(date: DateTime(2026, 10, 20), name: 'Dussehra'),
+  PublicHoliday(date: DateTime(2026, 11, 9), name: 'Diwali (Laxmi Pujan)'),
+  PublicHoliday(date: DateTime(2026, 11, 24), name: 'Guru Nanak Jayanti'),
+  PublicHoliday(date: DateTime(2026, 12, 25), name: 'Christmas Day'),
+  PublicHoliday(date: DateTime(2027, 1, 1), name: 'New Year\'s Day'),
+  PublicHoliday(date: DateTime(2027, 1, 26), name: 'Republic Day'),
+  PublicHoliday(date: DateTime(2027, 3, 22), name: 'Holi'),
+];
+
+/// Detailed breakdown of working days vs skipped weekend/holiday days.
+class WorkingDayBreakdown {
+  final int workingDays;
+  final int weekendDaysSkipped;
+  final int holidaysSkipped;
+  final List<String> skippedHolidayNames;
+
+  const WorkingDayBreakdown({
+    required this.workingDays,
+    required this.weekendDaysSkipped,
+    required this.holidaysSkipped,
+    required this.skippedHolidayNames,
+  });
+
+  String get explanationText {
+    final dayWord = workingDays == 1 ? 'working day' : 'working days';
+    final skippedParts = <String>[];
+    if (weekendDaysSkipped > 0) {
+      skippedParts.add(
+        '$weekendDaysSkipped weekend ${weekendDaysSkipped == 1 ? 'day' : 'days'} skipped',
+      );
+    }
+    if (holidaysSkipped > 0) {
+      final names = skippedHolidayNames.isNotEmpty
+          ? ': ${skippedHolidayNames.join(', ')}'
+          : '';
+      skippedParts.add(
+        '$holidaysSkipped public ${holidaysSkipped == 1 ? 'holiday' : 'holidays'} skipped$names',
+      );
+    }
+    if (skippedParts.isEmpty) {
+      return '$workingDays $dayWord (no weekends or holidays in range)';
+    }
+    return '$workingDays $dayWord (${skippedParts.join(' · ')})';
+  }
+}
+
+/// Recommendation for a 1-day bridge leave next to a public holiday and weekend.
+class BridgeDaySuggestion {
+  final PublicHoliday holiday;
+  final DateTime bridgeStartDate;
+  final DateTime bridgeEndDate;
+  final int totalDaysAway;
+  final int leaveDaysRequired;
+  final String message;
+
+  const BridgeDaySuggestion({
+    required this.holiday,
+    required this.bridgeStartDate,
+    required this.bridgeEndDate,
+    required this.totalDaysAway,
+    required this.leaveDaysRequired,
+    required this.message,
+  });
+}
+
+/// Live preview of an employee's leave balance before and after a request.
+class LeaveBalancePreview {
+  final LeaveType leaveType;
+  final int allocated;
+  final int used;
+  final int remainingBefore;
+  final int requestedDays;
+  final int remainingAfter;
+
+  const LeaveBalancePreview({
+    required this.leaveType,
+    required this.allocated,
+    required this.used,
+    required this.remainingBefore,
+    required this.requestedDays,
+    required this.remainingAfter,
+  });
+
+  bool get exceedsBalance => remainingAfter < 0;
+}
+

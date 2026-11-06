@@ -28,13 +28,13 @@ final inMemoryLeaveRepositoryProvider = Provider<InMemoryLeaveRepository>((ref) 
 /// Automatically uses [SupabaseLeaveRepository] when Supabase is initialized,
 /// or [InMemoryLeaveRepository] as fallback in local tests.
 final leaveRepositoryProvider = Provider<LeaveRepository>((ref) {
-  final inner = ref.watch(inMemoryLeaveRepositoryProvider);
   final isSupabase = ref.watch(supabaseBackendModeProvider);
   if (isSupabase) {
     return LoggingLeaveRepository(
-      SupabaseLeaveRepository(Supabase.instance.client, fallback: inner),
+      SupabaseLeaveRepository(Supabase.instance.client),
     );
   }
+  final inner = ref.watch(inMemoryLeaveRepositoryProvider);
   return LoggingLeaveRepository(inner);
 });
 

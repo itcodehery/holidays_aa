@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../features/auth/domain/app_user.dart';
+import '../../features/auth/presentation/account_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../logging/log_buffer.dart';
 import '../theme/app_theme.dart';
@@ -24,12 +24,10 @@ class AdaptiveDestination {
 }
 
 /// Responsive two-tone shell featuring:
-/// - Deep obsidian header bar with the **Holiday** wordmark, terracotta dot,
-///   and persona switcher.
-/// - Intentional floating dark pill bottom navigation bar with strictly the
-///   role's 2 options:
-///   - Employee: "Home" and "Add a Leave Request"
-///   - Manager / Admin: "Home" and "History"
+/// - Deep obsidian header bar with the **INTERLUDE** wordmark and terracotta dot.
+/// - Intentional floating dark pill bottom navigation bar with:
+///   - Employee: "Home", "Add Leave", and "Account"
+///   - Manager / Admin: "Home", "History", and "Account"
 /// - Extended dark obsidian rail on desktop (`> 1024px`).
 class AdaptiveScaffold extends ConsumerWidget {
   final String title;
@@ -73,16 +71,19 @@ class AdaptiveScaffold extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            LucideIcons.sparkles,
+            LucideIcons.treePalm,
             color: Color(0xFFF5F2EB),
             size: 22,
           ),
           const SizedBox(width: 10),
-          Text(
-            'HOLIDAY',
-            style: AppTheme.brandTitleStyle(
-              fontSize: 26,
-              color: const Color(0xFFF5F2EB),
+          Flexible(
+            child: Text(
+              'INTERLUDE',
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.brandTitleStyle(
+                fontSize: 24,
+                color: const Color(0xFFF5F2EB),
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -97,90 +98,6 @@ class AdaptiveScaffold extends ConsumerWidget {
         ],
       ),
       actions: [
-        if (user != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: PopupMenuButton<Role>(
-              tooltip: 'Switch demo persona',
-              color: AppTheme.ivoryCard,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              onSelected: (role) {
-                ref.read(authControllerProvider.notifier).signInAsDemo(role);
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem<Role>(
-                  enabled: false,
-                  child: Text(
-                    'Switch Persona (Demo)',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                for (final role in Role.values)
-                  PopupMenuItem<Role>(
-                    value: role,
-                    child: Row(
-                      children: [
-                        Icon(
-                          user.role == role
-                              ? LucideIcons.circleCheck
-                              : LucideIcons.circle,
-                          size: 17,
-                          color: user.role == role
-                              ? AppTheme.terracotta
-                              : AppTheme.inkMuted,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(role.label),
-                      ],
-                    ),
-                  ),
-              ],
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.obsidianElevated,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 13,
-                      backgroundColor: AppTheme.terracotta,
-                      child: Text(
-                        user.fullName.characters.first,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      user.role.label,
-                      style: const TextStyle(
-                        color: Color(0xFFF5F2EB),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      LucideIcons.chevronDown,
-                      size: 14,
-                      color: Color(0xFFC5C0B7),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         IconButton(
           tooltip: 'Debug Logs',
           icon: const Icon(
@@ -192,15 +109,13 @@ class AdaptiveScaffold extends ConsumerWidget {
         ),
         if (user != null)
           IconButton(
-            tooltip: 'Sign out',
+            tooltip: 'Log out',
             icon: const Icon(
               LucideIcons.logOut,
               size: 19,
               color: Color(0xFFC5C0B7),
             ),
-            onPressed: () {
-              ref.read(authControllerProvider.notifier).signOut();
-            },
+            onPressed: () => showLogoutConfirmationDialog(context, ref),
           ),
         const SizedBox(width: 12),
       ],
@@ -315,10 +230,10 @@ class AdaptiveScaffold extends ConsumerWidget {
   }
 }
 
-/// Intentional floating dark pill navigation bar housing strictly the 2 options
-/// for the active role:
-/// - Employee: "Home" and "Add a Leave Request"
-/// - Manager / Admin: "Home" and "History"
+/// Intentional floating dark pill navigation bar housing the 3 options for the
+/// active role:
+/// - Employee: "Home", "Add Leave", and "Account"
+/// - Manager / Admin: "Home", "History", and "Account"
 class _FloatingPillBottomBar extends StatelessWidget {
   final List<AdaptiveDestination> destinations;
   final int selectedIndex;
@@ -339,7 +254,7 @@ class _FloatingPillBottomBar extends StatelessWidget {
         child: Center(
           heightFactor: 1,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
+            constraints: const BoxConstraints(maxWidth: 460),
             child: Container(
               height: 64,
               padding: const EdgeInsets.all(6),
@@ -373,7 +288,7 @@ class _FloatingPillBottomBar extends StatelessWidget {
                             duration: const Duration(milliseconds: 180),
                             curve: Curves.easeOutCubic,
                             height: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               color: i == selectedIndex
                                   ? AppTheme.obsidianPillActive
@@ -387,19 +302,19 @@ class _FloatingPillBottomBar extends StatelessWidget {
                                   i == selectedIndex
                                       ? destinations[i].selectedIcon
                                       : destinations[i].icon,
-                                  size: 20,
+                                  size: 19,
                                   color: i == selectedIndex
                                       ? Colors.white
                                       : const Color(0xFFB8B4AC),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
                                     destinations[i].label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       fontWeight: i == selectedIndex
                                           ? FontWeight.w700
                                           : FontWeight.w500,

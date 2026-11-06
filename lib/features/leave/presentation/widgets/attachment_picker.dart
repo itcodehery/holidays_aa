@@ -183,6 +183,57 @@ class AttachmentPicker extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.alabasterCanvas,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recommended for ${leaveType.label}:',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.inkDark,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                for (final item in AttachmentPolicy.proofChecklist(leaveType))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isRequired
+                              ? LucideIcons.circleCheck
+                              : LucideIcons.sparkles,
+                          size: 13,
+                          color: isRequired
+                              ? AppTheme.terracotta
+                              : AppTheme.inkMuted,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.inkMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,

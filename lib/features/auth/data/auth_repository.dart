@@ -1,12 +1,10 @@
-import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/app_exception.dart';
 import '../domain/app_user.dart';
+import 'session_storage.dart';
 
-final _authRepoLog = Logger('SupabaseAuthRepository');
-
-/// Seeded demo personas for quick evaluator login and automated tests.
+/// Test fixture personas used by unit and widget tests.
 class DemoUsers {
   const DemoUsers._();
 
@@ -30,6 +28,7 @@ class DemoUsers {
     fullName: 'Alex Rivera',
     role: Role.employee,
     managerId: 'usr-mgr-1',
+    managerName: 'Priya Sharma',
   );
 
   static const AppUser employee2 = AppUser(
@@ -38,6 +37,7 @@ class DemoUsers {
     fullName: 'Samira Patel',
     role: Role.employee,
     managerId: 'usr-mgr-1',
+    managerName: 'Priya Sharma',
   );
 
   static const List<AppUser> all = [employee, manager, hr, employee2];
@@ -46,13 +46,7 @@ class DemoUsers {
     for (final u in all) {
       if (u.id == id) return u;
     }
-    return switch (id) {
-      '00000000-0000-0000-0000-000000000001' => manager,
-      '00000000-0000-0000-0000-000000000002' => hr,
-      '00000000-0000-0000-0000-000000000003' => employee,
-      '00000000-0000-0000-0000-000000000004' => employee2,
-      _ => null,
-    };
+    return null;
   }
 
   static AppUser? byEmail(String email) {
@@ -68,11 +62,10 @@ class DemoUsers {
 abstract class AuthRepository {
   AppUser? get currentUser;
   Future<AppUser> signInWithEmailPassword(String email, String password);
-  Future<AppUser> signInAsDemo(Role role);
   Future<void> signOut();
 }
 
-/// In-memory authentication repository with seeded demo accounts.
+/// In-memory authentication repository used in automated tests.
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({AppUser? initialUser}) : _currentUser = initialUser;
 
@@ -108,41 +101,73 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AppUser> signInAsDemo(Role role) async {
-    switch (role) {
-      case Role.employee:
-        _currentUser = DemoUsers.employee;
-        return DemoUsers.employee;
-      case Role.manager:
-        _currentUser = DemoUsers.manager;
-        return DemoUsers.manager;
-      case Role.hr:
-        _currentUser = DemoUsers.hr;
-        return DemoUsers.hr;
-    }
-  }
-
-  @override
   Future<void> signOut() async {
     _currentUser = null;
   }
 }
 
-/// Supabase-backed implementation of [AuthRepository].
-///
-/// Works with the seeded accounts in
-/// `supabase/migrations/20261106080100_seed_demo_data.sql` (`alex@company.com`,
-/// `manager@company.com`, `hr@company.com`), supports dynamic sign-up
-/// provisioning via `ensure_demo_profile`, and gracefully falls back to the
-/// matching demo persona if the Supabase schema migration has not been run yet.
+/// Live Supabase-backed implementation of [AuthRepository] with
+/// [SessionStorage] persistence across app restarts.
 class SupabaseAuthRepository implements AuthRepository {
-  SupabaseAuthRepository(this._client);
+  SupabaseAuthRepository(this._client) : _cachedUser = SessionStorage.cachedUser;
 
   final SupabaseClient _client;
   AppUser? _cachedUser;
 
   @override
-  AppUser? get currentUser => _cachedUser;
+  AppUser? get currentUser => _cachedUser ?? SessionStorage.cachedUser;
+
+  Future<AppUser> _fetchAndPersistProfile(User user, {String fallbackEmail = ''}) async {
+    final profile = await _client
+        .from('profiles')
+        .select()
+        .eq('id', user.id)
+        .single();
+
+    String? managerName;
+    final managerId = profile['manager_id'] as String?;
+    if (managerId != null && managerId.isNotEmpty) {
+      final mgrRow = await _client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', managerId)
+          .maybeSingle();
+      if (mgrRow != null) {
+        managerName = (mgrRow['full_name'] as String?)
+            ?.replaceAll(' (Manager)', '')
+            .trim();
+      }
+    }
+
+    final appUser = AppUser.fromJson(
+      profile,
+      email: user.email ?? fallbackEmail,
+      managerName: managerName,
+    );
+    _cachedUser = appUser;
+    await SessionStorage.saveUser(appUser);
+    return appUser;
+  }
+
+  /// Restores or refreshes the active Supabase session on app startup.
+  Future<AppUser?> restoreSession() async {
+    final authUser = _client.auth.currentUser;
+    if (authUser == null) {
+      // No active Supabase auth token; clear any stale cached user.
+      if (SessionStorage.cachedUser != null) {
+        await SessionStorage.clearUser();
+      }
+      _cachedUser = null;
+      return null;
+    }
+
+    try {
+      return await _fetchAndPersistProfile(authUser);
+    } catch (_) {
+      // If offline on launch, keep the persisted SessionStorage user.
+      return _cachedUser ?? SessionStorage.cachedUser;
+    }
+  }
 
   @override
   Future<AppUser> signInWithEmailPassword(String email, String password) async {
@@ -159,87 +184,16 @@ class SupabaseAuthRepository implements AuthRepository {
       if (user == null) {
         throw const UnauthorizedException('Invalid login credentials.');
       }
-      final profile = await _client
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
-      _cachedUser = AppUser.fromJson(profile, email: user.email ?? cleanEmail);
-      return _cachedUser!;
+      return await _fetchAndPersistProfile(user, fallbackEmail: cleanEmail);
     } catch (e) {
-      final demoMatch = DemoUsers.byEmail(cleanEmail);
-      if (demoMatch != null && password == 'demo1234') {
-        _authRepoLog.warning(
-          'Supabase auth/schema not yet seeded for $cleanEmail ($e); using demo persona fallback',
-        );
-        _cachedUser = demoMatch;
-        return demoMatch;
-      }
       throw mapToAppException(e);
     }
   }
 
   @override
-  Future<AppUser> signInAsDemo(Role role) async {
-    final targetDemo = switch (role) {
-      Role.employee => DemoUsers.employee,
-      Role.manager => DemoUsers.manager,
-      Role.hr => DemoUsers.hr,
-    };
-
-    try {
-      final res = await _client.auth.signInWithPassword(
-        email: targetDemo.email,
-        password: 'demo1234',
-      );
-      final user = res.user;
-      if (user != null) {
-        final profile = await _client
-            .from('profiles')
-            .select()
-            .eq('id', user.id)
-            .single();
-        _cachedUser = AppUser.fromJson(profile, email: targetDemo.email);
-        return _cachedUser!;
-      }
-    } catch (_) {
-      // Try dynamic sign-up + ensure_demo_profile RPC if schema exists.
-      try {
-        final signUpRes = await _client.auth.signUp(
-          email: targetDemo.email,
-          password: 'demo1234',
-          data: {'full_name': targetDemo.fullName},
-        );
-        if (signUpRes.user != null) {
-          final profileMap = await _client.rpc(
-            'ensure_demo_profile',
-            params: {
-              'p_role': role.dbValue,
-              'p_full_name': targetDemo.fullName,
-              'p_manager_email':
-                  role == Role.employee ? DemoUsers.manager.email : null,
-            },
-          );
-          _cachedUser = AppUser.fromJson(
-            profileMap as Map<String, dynamic>,
-            email: targetDemo.email,
-          );
-          return _cachedUser!;
-        }
-      } catch (e) {
-        _authRepoLog.warning(
-          'Supabase demo provisioning fallback for ${role.name}: $e',
-        );
-      }
-    }
-
-    _cachedUser = targetDemo;
-    return targetDemo;
-  }
-
-  @override
   Future<void> signOut() async {
     _cachedUser = null;
+    await SessionStorage.clearUser();
     try {
       await _client.auth.signOut();
     } catch (_) {}
